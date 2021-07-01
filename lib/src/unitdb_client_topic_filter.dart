@@ -33,7 +33,7 @@ class TopicFilter extends Topic {
 
   final String _subscriptionTopic;
 
-  String get subscriptionTopic => _subscriptionTopic;
+  // String get subscriptionTopic => _subscriptionTopic;
 
   final Stream<List<Message>> _changes;
 
@@ -65,12 +65,13 @@ class TopicFilter extends Topic {
 
   bool matches(Topic publicationTopic) {
     // If the topic is just multi wildcard then return matches to true.
-    if (topic == Topic.wildcardSymbol) {
+    if (_subscriptionTopic == Topic.multiWildcardSymbol ||
+        topic == Topic.wildcardSymbol) {
       return true;
     }
 
     // If the topics are an exact match then matches to true.
-    if (topic == publicationTopic.topic) {
+    if (_subscriptionTopic == publicationTopic.topic) {
       return true;
     }
 
@@ -104,6 +105,10 @@ class TopicFilter extends Topic {
       // is too specific to be a match.
       if (i + 1 == topicParts.length &&
           publicationTopic.topicParts.length > topicParts.length) {
+        return false;
+      }
+      if (i + 1 == publicationTopic.topicParts.length &&
+          publicationTopic.topicParts.length < topicParts.length) {
         return false;
       }
       // If we're here the current part matches so check the next

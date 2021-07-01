@@ -1,7 +1,7 @@
 part of unitdb_client;
 
 class GrpcConnectionHandler {
-  ClientChannel channel;
+  ClientChannel _channel;
   UnitdbClient _serverConn;
 
   ResponseStream<pbx.Packet> stream;
@@ -15,11 +15,11 @@ class GrpcConnectionHandler {
   Future<bool> newConnection(Uri uri, Duration timeout) {
     var r = ConnectResult();
     this.readOffset = 0;
-    this.channel = ClientChannel(uri.host,
+    this._channel = ClientChannel(uri.host,
         port: uri.port,
         options:
             const ChannelOptions(credentials: ChannelCredentials.insecure()));
-    this._serverConn = UnitdbClient(this.channel);
+    this._serverConn = UnitdbClient(this._channel);
     this.stream = _serverConn.stream(outPacket.stream);
     this.inPacket = StreamQueue<pbx.Packet>(this.stream);
     r.completer.complete(null);
@@ -34,11 +34,11 @@ class GrpcConnectionHandler {
   /// set initially will be lost.
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
-  Future<bool> hasNext() {
+  Future<bool> _hasNext() {
     return inPacket.hasNext;
   }
 
-  Future<void> next() {
+  Future<void> _next() {
     inPacket.next.then((inMsg) => this.inMsg.writeList(inMsg.data));
   }
 
@@ -73,7 +73,6 @@ class GrpcConnectionHandler {
   Future<int> write(ByteBuffer p) async {
     var total = p.length;
     do {
-      print('GrpcHandler::write data length $total');
       // Write our data into the request. Any error means we abort.
       final packet = pbx.Packet();
       packet.data = p.read(p.length);
@@ -88,7 +87,7 @@ class GrpcConnectionHandler {
   }
 
   /// shrink the inMsg ByteBuffer.
-  void shrink() {
+  void _shrink() {
     inMsg.removeRange(0, readOffset);
     readOffset = 0;
   }
@@ -103,7 +102,7 @@ class GrpcConnectionHandler {
     if (_serverConn != null) {
       inPacket.cancel();
       outPacket.close();
-      channel.shutdown();
+      _channel.shutdown();
       _serverConn = null;
     }
   }

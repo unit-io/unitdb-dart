@@ -1,11 +1,11 @@
 part of unitdb_client;
 
 /// Message identifier handling
-class MessageIdentifiers {
+class _MessageIdentifiers {
   /// Constructor
-  factory MessageIdentifiers() => _singleton;
-  MessageIdentifiers._internal();
-  static final MessageIdentifiers _singleton = MessageIdentifiers._internal();
+  factory _MessageIdentifiers() => _singleton;
+  _MessageIdentifiers._internal();
+  static final _MessageIdentifiers _singleton = _MessageIdentifiers._internal();
 
   int _mid;
 
@@ -14,7 +14,7 @@ class MessageIdentifiers {
 
   Map<int, Result> index = new Map(); // map[MID]Result
 
-  void cleanUp() {
+  void _cleanUp() {
     index.forEach((mId, result) {
       switch (result.runtimeType) {
         case PublishResult:
@@ -31,24 +31,24 @@ class MessageIdentifiers {
   }
 
   /// Resets the Mid
-  reset() {
+  _reset() {
     _mid = 0;
   }
 
   /// Frees the Mid
-  freeID(int id) {
+  _freeID(int id) {
     index.remove(id);
   }
 
   /// Gets next message identifier
-  int nextID(Result r) {
+  int _nextID(Result r) {
     _mid++;
     index[_mid] = r;
     return _mid;
   }
 
   /// Gets type for Mid
-  Result getType(int id) {
+  Result _getType(int id) {
     return index[id];
   }
 }

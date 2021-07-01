@@ -56,11 +56,11 @@ class WebsocketConnectionHandler {
   /// set initially will be lost.
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
-  Future<bool> hasNext() {
+  Future<bool> _hasNext() {
     return inPacket.hasNext;
   }
 
-  Future<void> next() {
+  Future<void> _next() {
     inPacket.next
         .then((inMsg) => this.inMsg.writeList(Uint8List.view(inMsg.data)));
   }
@@ -108,7 +108,7 @@ class WebsocketConnectionHandler {
   }
 
   /// shrink the inMsg ByteBuffer.
-  void shrink() {
+  void _shrink() {
     inMsg.removeRange(0, readOffset);
     readOffset = 0;
   }

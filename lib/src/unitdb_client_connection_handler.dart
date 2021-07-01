@@ -3,7 +3,7 @@ part of unitdb_client;
 class ConnectionHandler {
   Options opts;
   int contract;
-  MessageIdentifiers messageIds; // local identifier of messages
+  _MessageIdentifiers messageIds; // local identifier of messages
   int connID; // Theunique id of the connection.
   Map<int, MessageHandler> callbacks;
   Connection conn;
@@ -45,24 +45,24 @@ class ConnectionHandler {
     try {
       var m = cm.encode();
       await connectionHandler.write(m);
-      if (await connectionHandler.hasNext()) {
-        await connectionHandler.next();
+      if (await connectionHandler._hasNext()) {
+        await connectionHandler._next();
       }
     } on Exception catch (e) {
       rethrow;
     }
-    return await verifyCONNACK();
+    return await _verifyCONNACK();
   }
 
   /// This function is only used for receiving a connack
   /// when the connection is first started.
   /// This prevents receiving incoming data while resume
   /// is in progress if clean session is false.
-  Future<int> verifyCONNACK() async {
+  Future<int> _verifyCONNACK() async {
     ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
     if (ca.returnCode == ConnectReturnCode.Accepted.index) {
       connID = ca.connID;
-      messageIds.reset();
+      messageIds._reset();
       return ca.returnCode;
     }
 
@@ -70,20 +70,20 @@ class ConnectionHandler {
   }
 
   /// readLoop reads incoming messages from conn.
-  Future<void> readLoop() async {
+  Future<void> _readLoop() async {
     // await for (var inMsg in serverConn.stream) {
     //   serverConn.inPacket.sink.add(inMsg);
-    while (await connectionHandler.hasNext()) {
-      await connectionHandler.next();
+    while (await connectionHandler._hasNext()) {
+      await connectionHandler._next();
       var msg = await UtpMessage.read(connectionHandler);
-      connectionHandler.shrink();
-      handler(msg);
+      connectionHandler._shrink();
+      _handler(msg);
     }
   }
 
   /// handler handles inbound messages.
-  handler(UtpMessage msg) {
-    conn.updateLastAction();
+  _handler(UtpMessage msg) {
+    conn._updateLastAction();
 
     switch (msg.type()) {
       case MessageType.FLOWCONTROL:
@@ -92,15 +92,15 @@ class ConnectionHandler {
           case FlowControl.ACKNOWLEDGE:
             switch (ctrl.messageType) {
               case MessageType.PINGREQ:
-                conn.updateLastTouched();
+                conn._updateLastTouched();
                 break;
               case MessageType.PUBLISH:
               case MessageType.SUBSCRIBE:
               case MessageType.UNSUBSCRIBE:
                 var mId = ctrl.getInfo().messageID;
-                final r = messageIds.getType(mId);
+                final r = messageIds._getType(mId);
                 r.flowComplete();
-                messageIds.freeID(mId);
+                messageIds._freeID(mId);
                 break;
             }
             break;
@@ -111,9 +111,9 @@ class ConnectionHandler {
             break;
           case FlowControl.COMPLETE:
             var mId = msg.getInfo().messageID;
-            final r = messageIds.getType(mId);
+            final r = messageIds._getType(mId);
             r.flowComplete();
-            messageIds.freeID(mId);
+            messageIds._freeID(mId);
             break;
         }
         break;
@@ -126,13 +126,13 @@ class ConnectionHandler {
     }
   }
 
-  Future<void> writeLoop() async {
+  Future<void> _writeLoop() async {
     send.stream.listen((msg) {
       switch (msg.m.type()) {
         case MessageType.DISCONNECT:
           msg.r.flowComplete();
           var mId = msg.m.getInfo().messageID;
-          messageIds.freeID(mId);
+          messageIds._freeID(mId);
           break;
       }
       var m = msg.m.encode();
@@ -140,9 +140,9 @@ class ConnectionHandler {
     });
   }
 
-  Future<void> dispatcher() async {
+  Future<void> _dispatcher() async {
     // dispatch message to default callback function
-    if (callbacks.length > 0) {
+    if (callbacks.isNotEmpty) {
       var handler = callbacks[0];
       if (handler != null) {
         handler(conn, msg.stream);
@@ -151,9 +151,9 @@ class ConnectionHandler {
     pub.stream.listen((p) {
       for (var pubMsg in p.messages) {
         var m = Message.messageFromPublish(
-            p.getInfo().messageID, pubMsg, ack(this, p));
+            p.getInfo().messageID, pubMsg, _ack(this, p));
         eventChannel.notify(m);
-        if (msg?.hasListener) {
+        if (msg.hasListener) {
           msg.sink.add(m);
         }
       }
@@ -162,9 +162,9 @@ class ConnectionHandler {
 
   /// keepAlive - Send ping when connection unused for set period
   /// connection passed in to avoid race condition on shutdown
-  Future<void> keepAlive() async {
+  Future<void> _keepAlive() async {
     int pingInterval;
-    var pingSent = conn.timeNow();
+    var pingSent = conn._timeNow();
 
     if (opts.keepAlive > 10) {
       pingInterval = 5;
@@ -174,25 +174,25 @@ class ConnectionHandler {
 
     keepAliveTimer =
         await Timer.periodic(Duration(seconds: pingInterval), (timer) async {
-      var live = conn.timeNow().add(-Duration(seconds: opts.keepAlive));
-      var timeout = conn.timeNow().add(-opts.pingTimeout);
+      var live = conn._timeNow().add(-Duration(seconds: opts.keepAlive));
+      var timeout = conn._timeNow().add(-opts.pingTimeout);
 
       if (lastAction.isAfter(live) && lastTouched.isBefore(timeout)) {
         var ping = Pingreq();
         var m = ping.encode();
         connectionHandler.write(m);
-        pingSent = conn.timeNow();
+        pingSent = conn._timeNow();
       }
       if (lastTouched.isBefore(timeout) && pingSent.isBefore(timeout)) {
         await conn
-            .internalConnLost(); // no harm in calling this if the connection is already down (better than stopping!)
+            ._internalConnLost(); // no harm in calling this if the connection is already down (better than stopping!)
         timer.cancel();
       }
     });
   }
 
   /// ack acknowledges a packet
-  Function() ack(Connection c, Publish msg) {
+  Function() _ack(Connection c, Publish msg) {
     return () {
       switch (DeliveryMode.values[msg.getInfo().deliveryMode]) {
         case DeliveryMode.express:

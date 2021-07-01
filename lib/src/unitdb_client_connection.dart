@@ -9,7 +9,7 @@ class Connection with ConnectionHandler {
     // set default options
     this.opts = opts.withDefaultOptions();
     this.contract = MasterContract;
-    this.messageIds = MessageIdentifiers();
+    this.messageIds = _MessageIdentifiers();
     this.callbacks = Map<int, MessageHandler>();
 
     this.opts.addServer(target);
@@ -24,8 +24,8 @@ class Connection with ConnectionHandler {
     keepAliveTimer.cancel();
   }
 
-  Future<void> close() async {
-    if (!setClosed()) {
+  Future<void> _close() async {
+    if (!_setClosed()) {
       // error disconnecting client.
       return;
     }
@@ -49,7 +49,7 @@ class Connection with ConnectionHandler {
     }
 
     try {
-      var rc = await attemptConnection();
+      var rc = await _attemptConnection();
       r.returnCode = rc.index;
       if (rc != ConnectReturnCode.Accepted) {
         r.setError("failed to connect to messaging server");
@@ -59,22 +59,22 @@ class Connection with ConnectionHandler {
       r.setError(e.toString());
       rethrow;
     }
-    setConnected();
+    _setConnected();
 
     if (opts.keepAlive != 0) {
-      updateLastAction();
-      updateLastTouched();
-      waitGroup.add(keepAlive());
+      _updateLastAction();
+      _updateLastTouched();
+      waitGroup.add(_keepAlive());
     }
 
-    readLoop(); // process incoming messages
-    waitGroup.add(writeLoop()); // send messages to servers
-    dispatcher(); // dispatch messages to client
+    _readLoop(); // process incoming messages
+    waitGroup.add(_writeLoop()); // send messages to servers
+    _dispatcher(); // dispatch messages to client
 
     return r;
   }
 
-  Future<ConnectReturnCode> attemptConnection() async {
+  Future<ConnectReturnCode> _attemptConnection() async {
     int returnCode;
     for (var uri in opts.servers) {
       try {
@@ -99,7 +99,7 @@ class Connection with ConnectionHandler {
 
   /// disconnect will disconnect the connection to the server
   Future<void> disconnect() async {
-    if (isClosed()) {
+    if (_isClosed()) {
       // Disconnect() called but not connected
       return;
     }
@@ -109,13 +109,13 @@ class Connection with ConnectionHandler {
     send.sink.add(MessageAndResult(p, r: r));
     r.get(opts.writeTimeout);
 
-    await close();
-    messageIds.cleanUp();
+    await _close();
+    messageIds._cleanUp();
   }
 
 // serverDisconnect cleanup when server send disconnect request or an error occurs.
   void serverDisconnect() {
-    if (isClosed()) {
+    if (_isClosed()) {
       // Disconnect() called but not connected
       return;
     }
@@ -125,20 +125,20 @@ class Connection with ConnectionHandler {
   }
 
   /// internalConnLost cleanup when connection is lost or an error occurs
-  Future<void> internalConnLost() async {
+  Future<void> _internalConnLost() async {
     // It is possible that internalConnLost will be called multiple times simultaneously
     // (including after sending a DisconnectPacket) as such we only do cleanup etc if the
     // routines were actually running and are not being disconnected at users request
-    if (!isClosed()) {
+    if (!_isClosed()) {
       if (opts.cleanSession) {
-        messageIds.cleanUp();
+        messageIds._cleanUp();
       }
       if (opts.connectionLostHandler != null) {
         opts.connectionLostHandler(this);
       }
     }
 
-    await close();
+    await _close();
   }
 
   /// publish will publish a message with the specified delivery mode and content
@@ -146,13 +146,13 @@ class Connection with ConnectionHandler {
   Result publish(String topic, Uint8List payload,
       {deliveryMode = DeliveryMode.express, int delay = 0, String ttl = ""}) {
     var r = PublishResult();
-    if (isClosed()) {
+    if (_isClosed()) {
       r.setError("error not connected");
       return r;
     }
 
     List<PublishMessage> messages = [PublishMessage(topic, payload, ttl)];
-    final messageID = messageIds.nextID(r);
+    final messageID = messageIds._nextID(r);
     final pub = Publish(messageID, messages);
 
     var publishWaitTimeout = opts.writeTimeout;
@@ -170,13 +170,13 @@ class Connection with ConnectionHandler {
   Result subscribe(String topic,
       {deliveryMode = DeliveryMode.express, int delay = 0, String last = ""}) {
     var r = SubscribeResult();
-    if (isClosed()) {
+    if (_isClosed()) {
       r.setError("error not connected");
       return r;
     }
 
     final subs = [Subscription(topic, deliveryMode, delay, last)];
-    final messageID = messageIds.nextID(r);
+    final messageID = messageIds._nextID(r);
     final sub = Subscribe(messageID, subs);
 
     var subscribeWaitTimeout = opts.writeTimeout;
@@ -194,7 +194,7 @@ class Connection with ConnectionHandler {
   /// received.
   Result unsubscribe(List<String> topics) {
     var r = UnsubscribeResult();
-    if (isClosed()) {
+    if (_isClosed()) {
       r.setError("error not connected");
       return r;
     }
@@ -203,7 +203,7 @@ class Connection with ConnectionHandler {
     for (var topic in topics) {
       subs.add(Subscription(topic));
     }
-    final messageID = messageIds.nextID(r);
+    final messageID = messageIds._nextID(r);
     final unsub = Unsubscribe(messageID, subs);
 
     var unsubscribeWaitTimeout = opts.writeTimeout;
@@ -216,23 +216,23 @@ class Connection with ConnectionHandler {
     return r;
   }
 
-  /// TimeNow returns current wall time in UTC rounded to milliseconds.
-  DateTime timeNow() {
+  /// timeNow returns current wall time in UTC rounded to milliseconds.
+  DateTime _timeNow() {
     return DateTime.now();
   }
 
-  void updateLastAction() {
+  void _updateLastAction() {
     if (opts.keepAlive != 0) {
-      lastAction = timeNow();
+      lastAction = _timeNow();
     }
   }
 
-  void updateLastTouched() {
-    lastTouched = timeNow();
+  void _updateLastTouched() {
+    lastTouched = _timeNow();
   }
 
   /// Set connected flag; return true if not already connected.
-  bool setConnected() {
+  bool _setConnected() {
     if (_closed == 0) {
       return true;
     }
@@ -241,7 +241,7 @@ class Connection with ConnectionHandler {
   }
 
   /// Set closed flag; return true if not already closed.
-  bool setClosed() {
+  bool _setClosed() {
     if (_closed == 1) {
       return false;
     }
@@ -250,7 +250,7 @@ class Connection with ConnectionHandler {
   }
 
   /// Check whether connection was closed.
-  bool isClosed() {
+  bool _isClosed() {
     return _closed != 0;
   }
 }

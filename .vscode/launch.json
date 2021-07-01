@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "unitdb_client",
-            "program": "example/unitdb_client_example/lib/main.dart",
+            "program": "example/unitdb_client_simple.dart",
             "request": "launch",
             "type": "dart"
         }
