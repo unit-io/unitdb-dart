@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:unitdb_client/unitdb_client.dart' as unitdb;
-import 'package:unitdb_client/unitdb_client_web.dart' as web;
+import 'package:unitdb_client/unitdb_client.dart' as udb;
+import 'package:unitdb_client/unitdb_web_client.dart' as web;
 import 'package:unitdb_client_example/models/message.dart';
 import 'package:unitdb_client_example/dialogs/send_message.dart';
 import 'package:connectivity/connectivity.dart';
@@ -318,7 +318,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future _connect() async {
-    var opts = unitdb.Options();
+    var opts = udb.Options();
     opts
         // .withInsecure()
         .withKeepAlive(300)
@@ -355,7 +355,7 @@ class _MyAppState extends State<MyApp> {
 
     /// The client has a change notifier object(see the Observable class) which we then listen to to get
     /// notifications of published updates to each subscribed topic.
-    final topicFilter = unitdb.TopicFilter(
+    final topicFilter = udb.TopicFilter(
         "AbcANeDcBcKXS/LivingIndia.Groups.Private.Saffat",
         client.messageStream);
     subscription = topicFilter.messageStream.listen(_onMessage);
@@ -380,11 +380,11 @@ class _MyAppState extends State<MyApp> {
     // Ttimer();
   }
 
-  unitdb.ConnectionLostHandler onConnectionLost = (unitdb.Connection client) {
+  udb.ConnectionLostHandler onConnectionLost = (udb.Connection client) {
     print("Connection lost: \n");
   };
 
-  void _onMessage(List<unitdb.Message> e) {
+  void _onMessage(List<udb.Message> e) {
     print(e.length);
     print("TOPIC: ${e[0].topic}\n");
     print("MSG: ${utf8.decode(e[0].payload)}\n");
@@ -403,7 +403,7 @@ class _MyAppState extends State<MyApp> {
       messages.add(Message(
           topic: e[0].topic,
           message: message,
-          deliveryMode: unitdb.DeliveryMode.values[0]));
+          deliveryMode: udb.DeliveryMode.values[0]));
       try {
         messageController.animateTo(
           0.0,
@@ -420,7 +420,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       if (topics.add(topic.trim())) {
         print('Subscribing to ${topic.trim()}');
-        client.subscribe(topic, deliveryMode: unitdb.DeliveryMode.express);
+        client.subscribe(topic, deliveryMode: udb.DeliveryMode.express);
       }
     });
   }

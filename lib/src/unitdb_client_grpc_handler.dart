@@ -34,11 +34,11 @@ class GrpcConnectionHandler {
   /// set initially will be lost.
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
-  Future<bool> _hasNext() {
+  Future<bool> hasNext() {
     return inPacket.hasNext;
   }
 
-  Future<void> _next() {
+  Future<void> next() {
     inPacket.next.then((inMsg) => this.inMsg.writeList(inMsg.data));
   }
 
@@ -87,7 +87,7 @@ class GrpcConnectionHandler {
   }
 
   /// shrink the inMsg ByteBuffer.
-  void _shrink() {
+  void shrink() {
     inMsg.removeRange(0, readOffset);
     readOffset = 0;
   }

@@ -44,9 +44,10 @@ class ConnectionHandler {
   Future<int> _connect(Connect cm) async {
     try {
       var m = cm.encode();
+      print('connect: ${m.length}');
       await connectionHandler.write(m);
-      if (await connectionHandler._hasNext()) {
-        await connectionHandler._next();
+      if (await connectionHandler.hasNext()) {
+        await connectionHandler.next();
       }
     } on Exception catch (e) {
       rethrow;
@@ -73,10 +74,10 @@ class ConnectionHandler {
   Future<void> _readLoop() async {
     // await for (var inMsg in serverConn.stream) {
     //   serverConn.inPacket.sink.add(inMsg);
-    while (await connectionHandler._hasNext()) {
-      await connectionHandler._next();
+    while (await connectionHandler.hasNext()) {
+      await connectionHandler.next();
       var msg = await UtpMessage.read(connectionHandler);
-      connectionHandler._shrink();
+      connectionHandler.shrink();
       _handler(msg);
     }
   }

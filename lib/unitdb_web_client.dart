@@ -1,4 +1,4 @@
-library unitdb_client_web;
+library unitdb_web_client;
 
 import 'dart:async';
 import 'dart:html';

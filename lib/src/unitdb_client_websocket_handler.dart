@@ -1,4 +1,4 @@
-part of unitdb_client_web;
+part of unitdb_web_client;
 
 class WebsocketConnectionHandler {
   WebSocket _serverConn;
@@ -56,11 +56,11 @@ class WebsocketConnectionHandler {
   /// set initially will be lost.
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
-  Future<bool> _hasNext() {
+  Future<bool> hasNext() {
     return inPacket.hasNext;
   }
 
-  Future<void> _next() {
+  Future<void> next() {
     inPacket.next
         .then((inMsg) => this.inMsg.writeList(Uint8List.view(inMsg.data)));
   }
@@ -108,7 +108,7 @@ class WebsocketConnectionHandler {
   }
 
   /// shrink the inMsg ByteBuffer.
-  void _shrink() {
+  void shrink() {
     inMsg.removeRange(0, readOffset);
     readOffset = 0;
   }
@@ -127,12 +127,13 @@ class WebsocketConnectionHandler {
   }
 
   void _startListening() {
+    print('startlistening');
     try {
+      this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
       _serverConn.onClose.listen((e) {
         print('ClientConnectionHandler::_server - onClose ${e.reason}');
         close();
       });
-      this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
       _serverConn.onError.listen((e) {
         print('ClientConnectionHandler::_server - onError ${e.toString()}');
         close();

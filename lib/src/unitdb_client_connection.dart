@@ -87,7 +87,7 @@ class Connection with ConnectionHandler {
         }
       } on Exception catch (e) {
         final message =
-            'Connect: The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
+            'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made.';
         throw NoConnectionException(message);
       }
       if (connectionHandler != null) {

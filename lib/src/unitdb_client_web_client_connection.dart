@@ -1,4 +1,4 @@
-part of unitdb_client_web;
+part of unitdb_web_client;
 
 class WebClient extends Connection {
   WebClient(String target, String clientID, Options opts)
