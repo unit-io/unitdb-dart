@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: schema.proto
+//  source: unitdb.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
@@ -9,9 +9,9 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'schema.pbenum.dart';
+import 'unitdb.pbenum.dart';
 
-export 'schema.pbenum.dart';
+export 'unitdb.pbenum.dart';
 
 class Empty extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Empty', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
@@ -644,6 +644,122 @@ class Publish extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(3)
   $core.List<PublishMessage> get messages => $_getList(2);
+}
+
+class RelayRequest extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'RelayRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Topic', protoName: 'Topic')
+    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Last', protoName: 'Last')
+    ..hasRequiredFields = false
+  ;
+
+  RelayRequest._() : super();
+  factory RelayRequest({
+    $core.String? topic,
+    $core.String? last,
+  }) {
+    final _result = create();
+    if (topic != null) {
+      _result.topic = topic;
+    }
+    if (last != null) {
+      _result.last = last;
+    }
+    return _result;
+  }
+  factory RelayRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RelayRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RelayRequest clone() => RelayRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RelayRequest copyWith(void Function(RelayRequest) updates) => super.copyWith((message) => updates(message as RelayRequest)) as RelayRequest; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static RelayRequest create() => RelayRequest._();
+  RelayRequest createEmptyInstance() => create();
+  static $pb.PbList<RelayRequest> createRepeated() => $pb.PbList<RelayRequest>();
+  @$core.pragma('dart2js:noInline')
+  static RelayRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RelayRequest>(create);
+  static RelayRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get topic => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set topic($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTopic() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTopic() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get last => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set last($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasLast() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLast() => clearField(2);
+}
+
+class Relay extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Relay', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+    ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
+    ..pc<RelayRequest>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'relayRequests', $pb.PbFieldType.PM, protoName: 'relayRequests', subBuilder: RelayRequest.create)
+    ..hasRequiredFields = false
+  ;
+
+  Relay._() : super();
+  factory Relay({
+    $core.int? messageID,
+    $core.Iterable<RelayRequest>? relayRequests,
+  }) {
+    final _result = create();
+    if (messageID != null) {
+      _result.messageID = messageID;
+    }
+    if (relayRequests != null) {
+      _result.relayRequests.addAll(relayRequests);
+    }
+    return _result;
+  }
+  factory Relay.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Relay.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Relay clone() => Relay()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Relay copyWith(void Function(Relay) updates) => super.copyWith((message) => updates(message as Relay)) as Relay; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static Relay create() => Relay._();
+  Relay createEmptyInstance() => create();
+  static $pb.PbList<Relay> createRepeated() => $pb.PbList<Relay>();
+  @$core.pragma('dart2js:noInline')
+  static Relay getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Relay>(create);
+  static Relay? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get messageID => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set messageID($core.int v) { $_setSignedInt32(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasMessageID() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageID() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.List<RelayRequest> get relayRequests => $_getList(1);
 }
 
 class Subscription extends $pb.GeneratedMessage {

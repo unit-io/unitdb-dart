@@ -168,14 +168,14 @@ class Connection with ConnectionHandler {
   /// Subscribe starts a new subscription. Provide a MessageHandler to be executed when
   /// a message is published on the topic provided.
   Result subscribe(String topic,
-      {deliveryMode = DeliveryMode.express, int delay = 0, String last = ""}) {
+      {deliveryMode = DeliveryMode.express, int delay = 0}) {
     var r = SubscribeResult();
     if (_isClosed()) {
       r.setError("error not connected");
       return r;
     }
 
-    final subs = [Subscription(topic, deliveryMode, delay, last)];
+    final subs = [Subscription(topic, deliveryMode, delay)];
     final messageID = messageIds._nextID(r);
     final sub = Subscribe(messageID, subs);
 

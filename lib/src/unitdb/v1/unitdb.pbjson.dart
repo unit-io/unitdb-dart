@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: schema.proto
+//  source: unitdb.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields,deprecated_member_use_from_same_package
@@ -30,15 +30,16 @@ const MessageType$json = const {
     const {'1': 'RERSERVED', '2': 0},
     const {'1': 'CONNECT', '2': 1},
     const {'1': 'PUBLISH', '2': 2},
-    const {'1': 'SUBSCRIBE', '2': 3},
-    const {'1': 'UNSUBSCRIBE', '2': 4},
-    const {'1': 'PINGREQ', '2': 5},
-    const {'1': 'DISCONNECT', '2': 6},
+    const {'1': 'RELAY', '2': 3},
+    const {'1': 'SUBSCRIBE', '2': 4},
+    const {'1': 'UNSUBSCRIBE', '2': 5},
+    const {'1': 'PINGREQ', '2': 6},
+    const {'1': 'DISCONNECT', '2': 7},
   ],
 };
 
 /// Descriptor for `MessageType`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List messageTypeDescriptor = $convert.base64Decode('CgtNZXNzYWdlVHlwZRINCglSRVJTRVJWRUQQABILCgdDT05ORUNUEAESCwoHUFVCTElTSBACEg0KCVNVQlNDUklCRRADEg8KC1VOU1VCU0NSSUJFEAQSCwoHUElOR1JFURAFEg4KCkRJU0NPTk5FQ1QQBg==');
+final $typed_data.Uint8List messageTypeDescriptor = $convert.base64Decode('CgtNZXNzYWdlVHlwZRINCglSRVJTRVJWRUQQABILCgdDT05ORUNUEAESCwoHUFVCTElTSBACEgkKBVJFTEFZEAMSDQoJU1VCU0NSSUJFEAQSDwoLVU5TVUJTQ1JJQkUQBRILCgdQSU5HUkVREAYSDgoKRElTQ09OTkVDVBAH');
 @$core.Deprecated('Use emptyDescriptor instead')
 const Empty$json = const {
   '1': 'Empty',
@@ -141,6 +142,28 @@ const Publish$json = const {
 
 /// Descriptor for `Publish`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List publishDescriptor = $convert.base64Decode('CgdQdWJsaXNoEhwKCU1lc3NhZ2VJRBgBIAEoBVIJTWVzc2FnZUlEEiIKDERlbGl2ZXJ5TW9kZRgCIAEoBVIMRGVsaXZlcnlNb2RlEjkKCE1lc3NhZ2VzGAMgAygLMh0udW5pdGRiLnNjaGVtYS5QdWJsaXNoTWVzc2FnZVIITWVzc2FnZXM=');
+@$core.Deprecated('Use relayRequestDescriptor instead')
+const RelayRequest$json = const {
+  '1': 'RelayRequest',
+  '2': const [
+    const {'1': 'Topic', '3': 1, '4': 1, '5': 9, '10': 'Topic'},
+    const {'1': 'Last', '3': 2, '4': 1, '5': 9, '10': 'Last'},
+  ],
+};
+
+/// Descriptor for `RelayRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List relayRequestDescriptor = $convert.base64Decode('CgxSZWxheVJlcXVlc3QSFAoFVG9waWMYASABKAlSBVRvcGljEhIKBExhc3QYAiABKAlSBExhc3Q=');
+@$core.Deprecated('Use relayDescriptor instead')
+const Relay$json = const {
+  '1': 'Relay',
+  '2': const [
+    const {'1': 'MessageID', '3': 1, '4': 1, '5': 5, '10': 'MessageID'},
+    const {'1': 'relayRequests', '3': 2, '4': 3, '5': 11, '6': '.unitdb.schema.RelayRequest', '10': 'relayRequests'},
+  ],
+};
+
+/// Descriptor for `Relay`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List relayDescriptor = $convert.base64Decode('CgVSZWxheRIcCglNZXNzYWdlSUQYASABKAVSCU1lc3NhZ2VJRBJBCg1yZWxheVJlcXVlc3RzGAIgAygLMhsudW5pdGRiLnNjaGVtYS5SZWxheVJlcXVlc3RSDXJlbGF5UmVxdWVzdHM=');
 @$core.Deprecated('Use subscriptionDescriptor instead')
 const Subscription$json = const {
   '1': 'Subscription',

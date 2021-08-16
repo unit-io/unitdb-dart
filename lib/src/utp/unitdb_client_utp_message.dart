@@ -5,6 +5,7 @@ enum MessageType {
   RESERVED,
   CONNECT,
   PUBLISH,
+  RELAY,
   SUBSCRIBE,
   UNSUBSCRIBE,
   PINGREQ,

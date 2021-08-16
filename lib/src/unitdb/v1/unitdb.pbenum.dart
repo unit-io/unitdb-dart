@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: schema.proto
+//  source: unitdb.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
@@ -36,15 +36,17 @@ class MessageType extends $pb.ProtobufEnum {
   static const MessageType RERSERVED = MessageType._(0, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'RERSERVED');
   static const MessageType CONNECT = MessageType._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CONNECT');
   static const MessageType PUBLISH = MessageType._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH');
-  static const MessageType SUBSCRIBE = MessageType._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'SUBSCRIBE');
-  static const MessageType UNSUBSCRIBE = MessageType._(4, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'UNSUBSCRIBE');
-  static const MessageType PINGREQ = MessageType._(5, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PINGREQ');
-  static const MessageType DISCONNECT = MessageType._(6, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'DISCONNECT');
+  static const MessageType RELAY = MessageType._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'RELAY');
+  static const MessageType SUBSCRIBE = MessageType._(4, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'SUBSCRIBE');
+  static const MessageType UNSUBSCRIBE = MessageType._(5, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'UNSUBSCRIBE');
+  static const MessageType PINGREQ = MessageType._(6, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PINGREQ');
+  static const MessageType DISCONNECT = MessageType._(7, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'DISCONNECT');
 
   static const $core.List<MessageType> values = <MessageType> [
     RERSERVED,
     CONNECT,
     PUBLISH,
+    RELAY,
     SUBSCRIBE,
     UNSUBSCRIBE,
     PINGREQ,

@@ -8,8 +8,8 @@ import 'package:grpc/grpc.dart';
 import 'package:typed_data/typed_data.dart' as typed;
 
 import 'package:protobuf/protobuf.dart' as proto;
-import 'package:unitdb_client/src/unitdb/v1/schema.pb.dart' as pbx;
-import 'package:unitdb_client/src/unitdb/v1/schema.pbgrpc.dart';
+import 'package:unitdb_client/src/unitdb/v1/unitdb.pb.dart' as pbx;
+import 'package:unitdb_client/src/unitdb/v1/unitdb.pbgrpc.dart';
 
 part 'src/utp/unitdb_client_utp_message.dart';
 

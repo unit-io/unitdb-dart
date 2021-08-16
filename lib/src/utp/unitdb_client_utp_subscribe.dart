@@ -2,21 +2,18 @@ part of unitdb_client;
 
 class Subscription {
   Subscription(String topic,
-      [deliveryMode = DeliveryMode.express, int delay = 0, String last = ""]) {
+      [deliveryMode = DeliveryMode.express, int delay = 0]) {
     this._topic = topic;
     this._deliveryMode = deliveryMode;
     this._delay = delay;
-    this._last = last;
   }
   String _topic;
   DeliveryMode _deliveryMode;
   int _delay;
-  String _last;
 
   String get topic => _topic;
   int get deliveryMode => _deliveryMode.index;
   int get delay => _delay;
-  String get last => _last;
 }
 
 class Subscribe implements UtpMessage {
@@ -44,7 +41,6 @@ class Subscribe implements UtpMessage {
       subscription.topic = s.topic;
       subscription.deliveryMode = s.deliveryMode;
       subscription.delay = s.delay;
-      subscription.last = s.last;
       subscriptions.add(subscription);
     }
 
@@ -86,7 +82,6 @@ class Unsubscribe implements UtpMessage {
       subscription.topic = s.topic;
       subscription.deliveryMode = s.deliveryMode;
       subscription.delay = s.delay;
-      subscription.last = s.last;
       subscriptions.add(subscription);
     }
 
