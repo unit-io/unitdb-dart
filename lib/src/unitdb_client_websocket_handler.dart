@@ -60,7 +60,7 @@ class WebsocketConnectionHandler {
     return inPacket.hasNext;
   }
 
-  Future<void> next() {
+  void next() {
     inPacket.next
         .then((inMsg) => this.inMsg.writeList(Uint8List.view(inMsg.data)));
   }

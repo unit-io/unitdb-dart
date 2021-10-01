@@ -34,15 +34,15 @@ class Connection with ConnectionHandler {
 
     cancelTimer();
     connectionHandler.close();
-    send.close();
-    pub.close();
+    await send.close();
+    await pub.close();
   }
 
   /// Connect will create a connection to the server
   /// The context will be used in the grpc stream connection.
   Future<Result> connect() async {
     var r = ConnectResult(); // Connect to the server
-    if (opts.servers.length == 0) {
+    if (opts.servers.isEmpty) {
       r.setError("no servers defined to connect to");
       // no servers defined to connect to.
       return r;
@@ -87,7 +87,7 @@ class Connection with ConnectionHandler {
         }
       } on Exception catch (e) {
         final message =
-            'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made.';
+            'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
         throw NoConnectionException(message);
       }
       if (connectionHandler != null) {
@@ -107,7 +107,7 @@ class Connection with ConnectionHandler {
     var p = Disconnect();
     var r = DisconnectResult();
     send.sink.add(MessageAndResult(p, r: r));
-    r.get(opts.writeTimeout);
+    // await r.get(opts.writeTimeout);
 
     await _close();
     messageIds._cleanUp();
@@ -156,11 +156,39 @@ class Connection with ConnectionHandler {
     final pub = Publish(messageID, messages);
 
     var publishWaitTimeout = opts.writeTimeout;
-    if (publishWaitTimeout == 0) {
+    if (publishWaitTimeout.inMilliseconds == 0) {
       publishWaitTimeout = opts.writeTimeout;
     }
 
     send.sink.add(MessageAndResult(pub, r: r));
+
+    return r;
+  }
+
+// Relay send a new relay request. Provide a MessageHandler to be executed when
+// a message is published on the topic provided.
+  Result relay(List<String> topics, {String last = ""}) {
+    var r = RelayResult();
+    if (_isClosed()) {
+      r.setError("error not connected");
+      return r;
+    }
+
+    List<RelayRequest> requests = [];
+
+    for (final topic in topics) {
+      requests.add(RelayRequest(topic, last));
+    }
+
+    final messageID = messageIds._nextID(r);
+    final rel = Relay(messageID, requests);
+
+    var relayWaitTimeout = opts.writeTimeout;
+    if (relayWaitTimeout.inMilliseconds == 0) {
+      relayWaitTimeout = opts.writeTimeout;
+    }
+
+    send.sink.add(MessageAndResult(rel, r: r));
 
     return r;
   }
@@ -180,7 +208,7 @@ class Connection with ConnectionHandler {
     final sub = Subscribe(messageID, subs);
 
     var subscribeWaitTimeout = opts.writeTimeout;
-    if (subscribeWaitTimeout == 0) {
+    if (subscribeWaitTimeout.inMilliseconds == 0) {
       subscribeWaitTimeout = Duration(seconds: 30);
     }
 
@@ -207,7 +235,7 @@ class Connection with ConnectionHandler {
     final unsub = Unsubscribe(messageID, subs);
 
     var unsubscribeWaitTimeout = opts.writeTimeout;
-    if (unsubscribeWaitTimeout == 0) {
+    if (unsubscribeWaitTimeout.inMilliseconds == 0) {
       unsubscribeWaitTimeout = Duration(seconds: 30);
     }
 

@@ -649,18 +649,23 @@ class Publish extends $pb.GeneratedMessage {
 class RelayRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'RelayRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Topic', protoName: 'Topic')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Last', protoName: 'Last')
+    ..m<$core.String, $core.String>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Tags', protoName: 'Tags', entryClassName: 'RelayRequest.TagsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OS, packageName: const $pb.PackageName('unitdb.schema'))
+    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Last', protoName: 'Last')
     ..hasRequiredFields = false
   ;
 
   RelayRequest._() : super();
   factory RelayRequest({
     $core.String? topic,
+    $core.Map<$core.String, $core.String>? tags,
     $core.String? last,
   }) {
     final _result = create();
     if (topic != null) {
       _result.topic = topic;
+    }
+    if (tags != null) {
+      _result.tags.addAll(tags);
     }
     if (last != null) {
       _result.last = last;
@@ -698,13 +703,16 @@ class RelayRequest extends $pb.GeneratedMessage {
   void clearTopic() => clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get last => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set last($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasLast() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearLast() => clearField(2);
+  $core.Map<$core.String, $core.String> get tags => $_getMap(1);
+
+  @$pb.TagNumber(3)
+  $core.String get last => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set last($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasLast() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLast() => clearField(3);
 }
 
 class Relay extends $pb.GeneratedMessage {

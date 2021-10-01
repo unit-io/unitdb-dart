@@ -36,9 +36,9 @@ class Options {
   int batchByteThreshold;
   int batchCountThreshold;
 
-  Options addServer(String target) {
+  void addServer(String target) {
     var re = RegExp(r'%(25)?');
-    if (target.length > 0 && target[0] == ':') {
+    if (target.isNotEmpty && target[0] == ':') {
       target = "127.0.0.1" + target;
     }
     if (!target.contains('://')) {
@@ -50,7 +50,7 @@ class Options {
     this.servers.add(uri);
   }
 
-  Options setClientID(String clientID) {
+  void setClientID(String clientID) {
     this.clientID = clientID;
   }
 

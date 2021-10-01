@@ -14,7 +14,6 @@ class ControlMessage implements UtpMessage {
   int _messageID;
   MessageType _messageType;
   FlowControl _flowControl;
-  UtpMessage _message;
 
   int get messageID => _messageID;
 
@@ -50,6 +49,11 @@ class ControlMessage implements UtpMessage {
             fh = FixedHeader(pbx.MessageType.PUBLISH,
                 pbx.FlowControl.ACKNOWLEDGE, data.length);
             break;
+          case MessageType.RELAY:
+            fh = FixedHeader(pbx.MessageType.RELAY, pbx.FlowControl.ACKNOWLEDGE,
+                data.length);
+            break;
+
           case MessageType.SUBSCRIBE:
             fh = FixedHeader(pbx.MessageType.SUBSCRIBE,
                 pbx.FlowControl.ACKNOWLEDGE, data.length);

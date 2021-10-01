@@ -12,7 +12,7 @@ class _MessageIdentifiers {
   /// Mid
   int get mid => _mid;
 
-  Map<int, Result> index = new Map(); // map[MID]Result
+  Map<int, Result> index = Map(); // map[MID]Result
 
   void _cleanUp() {
     index.forEach((mId, result) {

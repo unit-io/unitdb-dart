@@ -38,7 +38,7 @@ class GrpcConnectionHandler {
     return inPacket.hasNext;
   }
 
-  Future<void> next() {
+  void next() {
     inPacket.next.then((inMsg) => this.inMsg.writeList(inMsg.data));
   }
 

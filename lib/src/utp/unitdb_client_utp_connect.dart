@@ -12,15 +12,15 @@ class Connect implements UtpMessage {
     username = user[0];
     password = user.length > 1 ? user[1] : password;
 
-    if (username != "") {
+    if (username.isNotEmpty) {
       this._username = username;
       //mustn't have password without user as well
-      if (password != "") {
+      if (password.isNotEmpty) {
         this._password = password;
       }
     }
 
-    this._keepAlive = opts.keepAlive;
+    // this._keepAlive = opts.keepAlive;
   }
 
   bool _cleanSessFlag;
@@ -28,7 +28,7 @@ class Connect implements UtpMessage {
   bool _insecureFlag;
   String _username;
   Uint8List _password;
-  int _keepAlive;
+  // int _keepAlive;
 
   /// type returns the Message type.
   MessageType type() {

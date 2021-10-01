@@ -20,7 +20,7 @@ abstract class ResultNotifier {
 
 class Result implements ResultNotifier {
   String _err;
-  final completer = new Completer<bool>();
+  final completer = Completer<bool>();
   void flowComplete() {
     completer.complete(null);
   }
@@ -41,7 +41,7 @@ class Result implements ResultNotifier {
       throw _err;
     }
     if (!completer.isCompleted) {
-      Future.delayed(waitDuration);
+      await Future.delayed(waitDuration);
     }
     return completer.future;
   }
@@ -76,12 +76,21 @@ class PublishResult extends Result {
   int get messageID => _messageID;
 }
 
+/// RelayResult is an extension of result containing the extra fields
+/// required to provide information about calls to Relay()
+class RelayResult extends Result {
+  int _messageID;
+
+  /// MessageID returns the message ID that was assigned to the
+  /// Relay Message when it was sent to the server
+  int get messageID => _messageID;
+}
+
 /// SubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Subscribe()
 class SubscribeResult extends Result {
   Map<int, ByteBuffer> subs;
   Map<String, ByteBuffer> subResult;
-  int _messageID;
 
   /// Result returns a map of topics that were subscribed to along with
   /// the matching return code from the server. This is either the Qos
@@ -91,9 +100,7 @@ class SubscribeResult extends Result {
 
 /// UnsubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Unsubscribe()
-class UnsubscribeResult extends Result {
-  int _messageID;
-}
+class UnsubscribeResult extends Result {}
 
 /// DisconnectResult is an extension of result containing the extra fields
 /// required to provide information about calls to Disconnect()

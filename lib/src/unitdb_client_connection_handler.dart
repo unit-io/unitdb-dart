@@ -71,7 +71,7 @@ class ConnectionHandler {
   }
 
   /// readLoop reads incoming messages from conn.
-  Future<void> _readLoop() async {
+  void _readLoop() async {
     // await for (var inMsg in serverConn.stream) {
     //   serverConn.inPacket.sink.add(inMsg);
     while (await connectionHandler.hasNext()) {
@@ -98,6 +98,7 @@ class ConnectionHandler {
               case MessageType.PUBLISH:
               case MessageType.SUBSCRIBE:
               case MessageType.UNSUBSCRIBE:
+              case MessageType.RELAY:
                 var mId = ctrl.getInfo().messageID;
                 final r = messageIds._getType(mId);
                 r.flowComplete();
@@ -141,7 +142,7 @@ class ConnectionHandler {
     });
   }
 
-  Future<void> _dispatcher() async {
+  void _dispatcher() async {
     // dispatch message to default callback function
     if (callbacks.isNotEmpty) {
       var handler = callbacks[0];

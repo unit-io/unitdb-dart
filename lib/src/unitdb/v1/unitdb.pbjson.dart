@@ -147,12 +147,24 @@ const RelayRequest$json = const {
   '1': 'RelayRequest',
   '2': const [
     const {'1': 'Topic', '3': 1, '4': 1, '5': 9, '10': 'Topic'},
-    const {'1': 'Last', '3': 2, '4': 1, '5': 9, '10': 'Last'},
+    const {'1': 'Tags', '3': 2, '4': 3, '5': 11, '6': '.unitdb.schema.RelayRequest.TagsEntry', '10': 'Tags'},
+    const {'1': 'Last', '3': 3, '4': 1, '5': 9, '10': 'Last'},
   ],
+  '3': const [RelayRequest_TagsEntry$json],
+};
+
+@$core.Deprecated('Use relayRequestDescriptor instead')
+const RelayRequest_TagsEntry$json = const {
+  '1': 'TagsEntry',
+  '2': const [
+    const {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    const {'1': 'value', '3': 2, '4': 1, '5': 9, '10': 'value'},
+  ],
+  '7': const {'7': true},
 };
 
 /// Descriptor for `RelayRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List relayRequestDescriptor = $convert.base64Decode('CgxSZWxheVJlcXVlc3QSFAoFVG9waWMYASABKAlSBVRvcGljEhIKBExhc3QYAiABKAlSBExhc3Q=');
+final $typed_data.Uint8List relayRequestDescriptor = $convert.base64Decode('CgxSZWxheVJlcXVlc3QSFAoFVG9waWMYASABKAlSBVRvcGljEjkKBFRhZ3MYAiADKAsyJS51bml0ZGIuc2NoZW1hLlJlbGF5UmVxdWVzdC5UYWdzRW50cnlSBFRhZ3MSEgoETGFzdBgDIAEoCVIETGFzdBo3CglUYWdzRW50cnkSEAoDa2V5GAEgASgJUgNrZXkSFAoFdmFsdWUYAiABKAlSBXZhbHVlOgI4AQ==');
 @$core.Deprecated('Use relayDescriptor instead')
 const Relay$json = const {
   '1': 'Relay',

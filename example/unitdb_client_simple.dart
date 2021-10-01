@@ -81,22 +81,11 @@ void main() async {
     return;
   }
 
-  var msgResult = client.subscribe("groups.private.673651407196578720.*",
+  client.subscribe("groups.private.673651407196578720.*",
       deliveryMode: DeliveryMode.express);
-  try {
-    await msgResult.get(Duration(seconds: 1));
-  } catch (e) {
-    print(e.toString());
-  }
 
-  var notificationResult = client.subscribe(
-      "groups.private.673651407196578720.*.notification",
+  client.subscribe("groups.private.673651407196578720.*.notification",
       deliveryMode: DeliveryMode.express);
-  try {
-    await notificationResult.get(Duration(seconds: 1));
-  } catch (e) {
-    print(e.toString());
-  }
 
   final msgFilter =
       TopicFilter("groups.private.673651407196578720.*", client.messageStream);
@@ -114,31 +103,31 @@ void main() async {
 
   for (var i = 0; i < 3; i++) {
     var msg = "Hi msg #${i}!";
-    var pubResult = client.publish(
-        "ADcABeFRBDJKe/groups.private.673651407196578720.message",
-        utf8.encode(msg),
+    await client.publish(
+        "groups.private.673651407196578720.message", utf8.encode(msg),
         deliveryMode: DeliveryMode.express);
-    try {
-      await pubResult.get(Duration(seconds: 1));
-    } catch (e) {
-      print(e.toString());
-    }
   }
 
   for (var i = 0; i < 3; i++) {
     var msg = "Hi notification #${i}!";
-    var pubResult = client.publish(
-        "ADcABeFRBDJKe/groups.private.673651407196578720.1.notification",
-        utf8.encode(msg),
+    await client.publish(
+        "groups.private.673651407196578720.1.notification", utf8.encode(msg),
         deliveryMode: DeliveryMode.express);
-    try {
-      await pubResult.get(Duration(seconds: 1));
-    } catch (e) {
-      print(e.toString());
-    }
   }
 
-  await Future.delayed(Duration(seconds: 10));
+  await Future.delayed(Duration(seconds: 5));
+
+  List<String> reqs = [
+    "ADcABeFRBDJKe/groups.private.673651407196578720.message",
+    "ADcABeFRBDJKe/groups.private.673651407196578720.1.notification"
+  ];
+
+  var relResult = client.relay(reqs, last: "1m");
+  try {
+    await relResult.get(Duration(seconds: 1));
+  } catch (e) {
+    print(e.toString());
+  }
 
   List<String> topics = [
     "ADcABeFRBDJKe/groups.private.673651407196578720.*",
