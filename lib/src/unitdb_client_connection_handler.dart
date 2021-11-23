@@ -1,12 +1,15 @@
 part of unitdb_client;
 
 class ConnectionHandler {
-  Options opts;
-  int contract;
-  _MessageIdentifiers messageIds; // local identifier of messages
-  int connID; // Theunique id of the connection.
-  Map<int, MessageHandler> callbacks;
-  Connection conn;
+  Options _opts;
+  int _contract;
+  _MessageIdentifiers _messageIds; // local identifier of messages
+  int _connID; // Theunique id of the connection.
+
+  int get connectionId => _connID;
+
+  Map<int, MessageHandler> _callbacks;
+  Connection _conn;
 
   /// The Handler that is managing the connection to the remote server.
   @protected
@@ -14,13 +17,14 @@ class ConnectionHandler {
   // ServerConnection serverConn;
 
   /// Time when the keepalive session was last refreshed
-  DateTime lastTouched;
+  DateTime _lastTouched;
 
   /// Time when the session received any packer from client
-  DateTime lastAction;
+  DateTime _lastAction;
 
-  final waitGroup = <Future>[];
-  Timer keepAliveTimer;
+  final _waitGroup = <Future>[];
+  Timer _keepAliveTimer;
+  int _pingOutstanding;
   int _closed;
 
   final send = StreamController<MessageAndResult>();
@@ -34,7 +38,7 @@ class ConnectionHandler {
   EventChannel<Message> get eventChannel => _eventChannel;
 
   Future<bool> newConnection(Connection conn, Uri uri, Duration timeout) async {
-    this.conn = conn;
+    this._conn = conn;
     return connectionHandler.newConnection(uri, timeout);
   }
 
@@ -62,8 +66,8 @@ class ConnectionHandler {
   Future<int> _verifyCONNACK() async {
     ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
     if (ca.returnCode == ConnectReturnCode.Accepted.index) {
-      connID = ca.connID;
-      messageIds._reset();
+      _connID = ca.connID;
+      _messageIds._reset();
       return ca.returnCode;
     }
 
@@ -84,7 +88,7 @@ class ConnectionHandler {
 
   /// handler handles inbound messages.
   _handler(UtpMessage msg) {
-    conn._updateLastAction();
+    _conn._updateLastAction();
 
     switch (msg.type()) {
       case MessageType.FLOWCONTROL:
@@ -93,16 +97,16 @@ class ConnectionHandler {
           case FlowControl.ACKNOWLEDGE:
             switch (ctrl.messageType) {
               case MessageType.PINGREQ:
-                conn._updateLastTouched();
+                _conn._pingAcknowledgmentReceived();
                 break;
               case MessageType.PUBLISH:
               case MessageType.SUBSCRIBE:
               case MessageType.UNSUBSCRIBE:
               case MessageType.RELAY:
                 var mId = ctrl.getInfo().messageID;
-                final r = messageIds._getType(mId);
+                final r = _messageIds._getType(mId);
                 r.flowComplete();
-                messageIds._freeID(mId);
+                _messageIds._freeID(mId);
                 break;
             }
             break;
@@ -113,9 +117,9 @@ class ConnectionHandler {
             break;
           case FlowControl.COMPLETE:
             var mId = msg.getInfo().messageID;
-            final r = messageIds._getType(mId);
+            final r = _messageIds._getType(mId);
             r.flowComplete();
-            messageIds._freeID(mId);
+            _messageIds._freeID(mId);
             break;
         }
         break;
@@ -123,7 +127,7 @@ class ConnectionHandler {
         pub.sink.add(msg);
         break;
       case MessageType.DISCONNECT:
-        conn.serverDisconnect();
+        _conn.serverDisconnect();
         break;
     }
   }
@@ -134,7 +138,7 @@ class ConnectionHandler {
         case MessageType.DISCONNECT:
           msg.r.flowComplete();
           var mId = msg.m.getInfo().messageID;
-          messageIds._freeID(mId);
+          _messageIds._freeID(mId);
           break;
       }
       var m = msg.m.encode();
@@ -144,10 +148,10 @@ class ConnectionHandler {
 
   void _dispatcher() async {
     // dispatch message to default callback function
-    if (callbacks.isNotEmpty) {
-      var handler = callbacks[0];
+    if (_callbacks.isNotEmpty) {
+      var handler = _callbacks[0];
       if (handler != null) {
-        handler(conn, msg.stream);
+        handler(_conn, msg.stream);
       }
     }
     pub.stream.listen((p) {
@@ -166,27 +170,33 @@ class ConnectionHandler {
   /// connection passed in to avoid race condition on shutdown
   Future<void> _keepAlive() async {
     int pingInterval;
-    var pingSent = conn._timeNow();
+    var pingSent = _conn._timeNow();
 
-    if (opts.keepAlive > 10) {
+    if (_opts.keepAlive > 10) {
       pingInterval = 5;
     } else {
-      pingInterval = opts.keepAlive ~/ 2;
+      pingInterval = _opts.keepAlive ~/ 2;
     }
 
-    keepAliveTimer =
+    _keepAliveTimer =
         await Timer.periodic(Duration(seconds: pingInterval), (timer) async {
-      var live = conn._timeNow().add(-Duration(seconds: opts.keepAlive));
-      var timeout = conn._timeNow().add(-opts.pingTimeout);
+      final sinceLastSent = _conn._timeNow().difference(_lastAction).inSeconds;
+      final sinceLastReceived =
+          _conn._timeNow().difference(_lastTouched).inSeconds;
+      var liveDuration = Duration(seconds: _opts.keepAlive).inSeconds;
+      var timeout = _conn._timeNow().add(-_opts.pingTimeout);
 
-      if (lastAction.isAfter(live) && lastTouched.isBefore(timeout)) {
-        var ping = Pingreq();
-        var m = ping.encode();
-        connectionHandler.write(m);
-        pingSent = conn._timeNow();
+      if (sinceLastSent >= liveDuration || sinceLastReceived >= liveDuration) {
+        if (_pingOutstanding == 0) {
+          var ping = Pingreq();
+          var m = ping.encode();
+          connectionHandler.write(m);
+          pingSent = _conn._timeNow();
+        }
       }
-      if (lastTouched.isBefore(timeout) && pingSent.isBefore(timeout)) {
-        await conn
+      if (_pingOutstanding > 0 &&
+          _conn._timeNow().difference(pingSent) >= _opts.pingTimeout) {
+        await _conn
             ._internalConnLost(); // no harm in calling this if the connection is already down (better than stopping!)
         timer.cancel();
       }

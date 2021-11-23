@@ -380,7 +380,7 @@ class _MyAppState extends State<MyApp> {
     // Ttimer();
   }
 
-  udb.ConnectionLostHandler onConnectionLost = (udb.Connection client) {
+  udb.ConnectionLostHandler onConnectionLost = () {
     print("Connection lost: \n");
   };
 

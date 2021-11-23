@@ -2,6 +2,7 @@ library unitdb_client;
 
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:web_gl';
 import 'package:meta/meta.dart';
 import 'package:async/async.dart';
 import 'package:grpc/grpc.dart';

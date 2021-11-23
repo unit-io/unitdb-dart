@@ -7,21 +7,21 @@ const MasterContract = 3376684800;
 class Connection with ConnectionHandler {
   Connection(String target, String clientID, Options opts) {
     // set default options
-    this.opts = opts.withDefaultOptions();
-    this.contract = MasterContract;
-    this.messageIds = _MessageIdentifiers();
-    this.callbacks = Map<int, MessageHandler>();
+    this._opts = opts.withDefaultOptions();
+    this._contract = MasterContract;
+    this._messageIds = _MessageIdentifiers();
+    this._callbacks = Map<int, MessageHandler>();
 
-    this.opts.addServer(target);
-    this.opts.setClientID(clientID);
-    this.callbacks[0] = opts.defaultMessageHandler;
+    this._opts.addServer(target);
+    this._opts.setClientID(clientID);
+    this._callbacks[0] = opts.defaultMessageHandler;
   }
 
   /// The stream on which all subscribed topic messages are published to.
   Stream<List<Message>> get messageStream => eventChannel?.changes;
 
   void cancelTimer() {
-    keepAliveTimer.cancel();
+    _keepAliveTimer.cancel();
   }
 
   Future<void> _close() async {
@@ -30,7 +30,7 @@ class Connection with ConnectionHandler {
       return;
     }
 
-    await Future.wait(waitGroup);
+    await Future.wait(_waitGroup);
 
     cancelTimer();
     connectionHandler.close();
@@ -42,7 +42,7 @@ class Connection with ConnectionHandler {
   /// The context will be used in the grpc stream connection.
   Future<Result> connect() async {
     var r = ConnectResult(); // Connect to the server
-    if (opts.servers.isEmpty) {
+    if (_opts.servers.isEmpty) {
       r.setError("no servers defined to connect to");
       // no servers defined to connect to.
       return r;
@@ -61,14 +61,19 @@ class Connection with ConnectionHandler {
     }
     _setConnected();
 
-    if (opts.keepAlive != 0) {
+    if (_opts.onConnectionHandler != null) {
+      _opts.onConnectionHandler(this);
+    }
+
+    if (_opts.keepAlive != 0) {
+      _pingOutstanding = 0;
       _updateLastAction();
       _updateLastTouched();
-      waitGroup.add(_keepAlive());
+      _waitGroup.add(_keepAlive());
     }
 
     _readLoop(); // process incoming messages
-    waitGroup.add(_writeLoop()); // send messages to servers
+    _waitGroup.add(_writeLoop()); // send messages to servers
     _dispatcher(); // dispatch messages to client
 
     return r;
@@ -76,11 +81,11 @@ class Connection with ConnectionHandler {
 
   Future<ConnectReturnCode> _attemptConnection() async {
     int returnCode;
-    for (var uri in opts.servers) {
+    for (var uri in _opts.servers) {
       try {
-        await newConnection(this, uri, opts.connectTimeout);
+        await newConnection(this, uri, _opts.connectTimeout);
         // get Connect message from options.
-        var cm = Connect.withOptions(opts, uri);
+        var cm = Connect.withOptions(_opts, uri);
         returnCode = await _connect(cm);
         if (returnCode == ConnectReturnCode.Accepted.index) {
           break;
@@ -110,7 +115,7 @@ class Connection with ConnectionHandler {
     // await r.get(opts.writeTimeout);
 
     await _close();
-    messageIds._cleanUp();
+    _messageIds._cleanUp();
   }
 
 // serverDisconnect cleanup when server send disconnect request or an error occurs.
@@ -119,8 +124,8 @@ class Connection with ConnectionHandler {
       // Disconnect() called but not connected
       return;
     }
-    if (opts.connectionLostHandler != null) {
-      opts.connectionLostHandler(this);
+    if (_opts.connectionLostHandler != null) {
+      _opts.connectionLostHandler();
     }
   }
 
@@ -130,11 +135,11 @@ class Connection with ConnectionHandler {
     // (including after sending a DisconnectPacket) as such we only do cleanup etc if the
     // routines were actually running and are not being disconnected at users request
     if (!_isClosed()) {
-      if (opts.cleanSession) {
-        messageIds._cleanUp();
+      if (_opts.cleanSession) {
+        _messageIds._cleanUp();
       }
-      if (opts.connectionLostHandler != null) {
-        opts.connectionLostHandler(this);
+      if (_opts.connectionLostHandler != null) {
+        _opts.connectionLostHandler();
       }
     }
 
@@ -152,12 +157,12 @@ class Connection with ConnectionHandler {
     }
 
     List<PublishMessage> messages = [PublishMessage(topic, payload, ttl)];
-    final messageID = messageIds._nextID(r);
+    final messageID = _messageIds._nextID(r);
     final pub = Publish(messageID, messages);
 
-    var publishWaitTimeout = opts.writeTimeout;
+    var publishWaitTimeout = _opts.writeTimeout;
     if (publishWaitTimeout.inMilliseconds == 0) {
-      publishWaitTimeout = opts.writeTimeout;
+      publishWaitTimeout = _opts.writeTimeout;
     }
 
     send.sink.add(MessageAndResult(pub, r: r));
@@ -180,12 +185,12 @@ class Connection with ConnectionHandler {
       requests.add(RelayRequest(topic, last));
     }
 
-    final messageID = messageIds._nextID(r);
+    final messageID = _messageIds._nextID(r);
     final rel = Relay(messageID, requests);
 
-    var relayWaitTimeout = opts.writeTimeout;
+    var relayWaitTimeout = _opts.writeTimeout;
     if (relayWaitTimeout.inMilliseconds == 0) {
-      relayWaitTimeout = opts.writeTimeout;
+      relayWaitTimeout = _opts.writeTimeout;
     }
 
     send.sink.add(MessageAndResult(rel, r: r));
@@ -204,10 +209,10 @@ class Connection with ConnectionHandler {
     }
 
     final subs = [Subscription(topic, deliveryMode, delay)];
-    final messageID = messageIds._nextID(r);
+    final messageID = _messageIds._nextID(r);
     final sub = Subscribe(messageID, subs);
 
-    var subscribeWaitTimeout = opts.writeTimeout;
+    var subscribeWaitTimeout = _opts.writeTimeout;
     if (subscribeWaitTimeout.inMilliseconds == 0) {
       subscribeWaitTimeout = Duration(seconds: 30);
     }
@@ -231,10 +236,10 @@ class Connection with ConnectionHandler {
     for (var topic in topics) {
       subs.add(Subscription(topic));
     }
-    final messageID = messageIds._nextID(r);
+    final messageID = _messageIds._nextID(r);
     final unsub = Unsubscribe(messageID, subs);
 
-    var unsubscribeWaitTimeout = opts.writeTimeout;
+    var unsubscribeWaitTimeout = _opts.writeTimeout;
     if (unsubscribeWaitTimeout.inMilliseconds == 0) {
       unsubscribeWaitTimeout = Duration(seconds: 30);
     }
@@ -249,14 +254,22 @@ class Connection with ConnectionHandler {
     return DateTime.now();
   }
 
+  void _pingAcknowledgmentReceived() {
+    _pingOutstanding = 0;
+    _updateLastTouched();
+    if (_opts.heartBeatHandler != null) {
+      _opts.heartBeatHandler();
+    }
+  }
+
   void _updateLastAction() {
-    if (opts.keepAlive != 0) {
-      lastAction = _timeNow();
+    if (_opts.keepAlive != 0) {
+      _lastAction = _timeNow();
     }
   }
 
   void _updateLastTouched() {
-    lastTouched = _timeNow();
+    _lastTouched = _timeNow();
   }
 
   /// Set connected flag; return true if not already connected.

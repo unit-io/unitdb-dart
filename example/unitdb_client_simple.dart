@@ -50,14 +50,14 @@ class TestClient {
   Completer<Result> _connectCompleter;
 }
 
-MessageHandler onMessage = (Connection client, Stream<Message> msgStream) {
+MessageHandler onMessage = (dynamic client, Stream<Message> msgStream) {
   msgStream.listen((msg) {
     print("TOPIC: ${msg.topic}\n");
     print("MSG: ${utf8.decode(msg.payload)}\n");
   });
 };
 
-ConnectionLostHandler onConnectionLost = (Connection client) {
+ConnectionLostHandler onConnectionLost = () {
   print("Connection lost: \n");
   exit(-1);
 };

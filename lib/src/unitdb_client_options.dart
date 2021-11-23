@@ -3,14 +3,19 @@ part of unitdb_client;
 /// MessageHandler is a callback type which can be set to be
 /// executed upon the arrival of messages published to topics
 /// to which the client is subscribed.
-typedef MessageHandler = void Function(Client, Stream<Message>);
+typedef MessageHandler = void Function(dynamic, Stream<Message>);
 
 /// OnConnectionHandler is a callback that is called when connection to the server is established.
-typedef OnConnectionHandler = Function(Client);
+typedef OnConnectionHandler = void Function(dynamic);
 
 /// ConnectionLostHandler is a callback that is set to be executed
 /// upon an uninteded disconnection from server.
-typedef ConnectionLostHandler = Function(Client);
+typedef ConnectionLostHandler = void Function();
+
+/// HeartBeatHandler is a callback that is set to be executed
+/// when ping response is received from the server.
+/// Can be used for health monitoring outside of the client itself.
+typedef HeartBeatHandler = void Function();
 
 class Options {
   Options();
@@ -31,6 +36,7 @@ class Options {
   MessageHandler defaultMessageHandler;
   OnConnectionHandler onConnectionHandler;
   ConnectionLostHandler connectionLostHandler;
+  HeartBeatHandler heartBeatHandler;
   Duration writeTimeout;
   Duration batchDuration;
   int batchByteThreshold;
@@ -72,6 +78,7 @@ class Options {
     o.onConnectionHandler = this.onConnectionHandler;
     o.defaultMessageHandler = this.defaultMessageHandler;
     o.connectionLostHandler = this.connectionLostHandler;
+    o.heartBeatHandler = this.heartBeatHandler;
     o.storePath = this.storePath ?? "/tmp/uniteb";
     o.storeSize = this.storeSize ?? 1 << 27;
     if (o.writeTimeout.inSeconds > 0) {
@@ -191,6 +198,14 @@ class Options {
   /// when connection to the client is lost.
   Options withConnectionLostHandler(ConnectionLostHandler handler) {
     this.connectionLostHandler = handler;
+    return this;
+  }
+
+  /// HeartBeatHandler is a callback that is set to be executed
+  /// when ping response is received from the server.
+  /// Can be used for health monitoring outside of the client itself.
+  Options withHeartBeatHandler(HeartBeatHandler handler) {
+    this.heartBeatHandler = handler;
     return this;
   }
 

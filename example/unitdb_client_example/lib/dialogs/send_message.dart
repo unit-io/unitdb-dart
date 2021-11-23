@@ -32,7 +32,7 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
       appBar: AppBar(title: Text('New message'), actions: <Widget>[
         FlatButton(
             child: Text('SEND',
-                style: theme.textTheme.body1.copyWith(color: Colors.white)),
+                style: theme.textTheme.bodyText1.copyWith(color: Colors.white)),
             onPressed: () {
               if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
@@ -52,7 +52,7 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
               child: TextFormField(
                 decoration:
                     const InputDecoration(labelText: 'Message', filled: true),
-                style: theme.textTheme.headline,
+                style: theme.textTheme.headline3,
                 maxLines: 2,
                 validator: (value) {
                   if (value.isEmpty) {
@@ -141,8 +141,8 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
     if (!_saveNeeded) return true;
 
     final ThemeData theme = Theme.of(context);
-    final TextStyle dialogTextStyle =
-        theme.textTheme.subhead.copyWith(color: theme.textTheme.caption.color);
+    final TextStyle dialogTextStyle = theme.textTheme.subtitle1
+        .copyWith(color: theme.textTheme.caption.color);
 
     return await showDialog<bool>(
           context: context,
