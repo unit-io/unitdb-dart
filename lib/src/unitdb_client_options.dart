@@ -69,7 +69,7 @@ class Options {
     o.insecureFlag = this.insecureFlag ?? false;
     o.username = this.username ?? "";
     o.password = this.password ?? Uint8List(0);
-    o.cleanSession = this.cleanSession ?? true;
+    o.cleanSession = this.cleanSession ?? false;
     o.keepAlive = this.keepAlive ?? 60;
     o.pingTimeout = this.pingTimeout ?? Duration(seconds: 60);
     o.connectTimeout = this.connectTimeout ?? Duration(seconds: 60);
