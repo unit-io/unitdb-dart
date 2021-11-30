@@ -69,38 +69,42 @@ class ConnectResult extends Result {
 /// PublishResult is an extension of result containing the extra fields
 /// required to provide information about calls to Publish()
 class PublishResult extends Result {
-  int _messageID;
-
-  /// MessageID returns the message ID that was assigned to the
-  /// Publish Message when it was sent to the server
-  int get messageID => _messageID;
+  @protected
+  int messageID;
 }
 
 /// RelayResult is an extension of result containing the extra fields
 /// required to provide information about calls to Relay()
 class RelayResult extends Result {
-  int _messageID;
+  @protected
+  int messageID;
+  Map<String, ByteBuffer> relResult;
 
-  /// MessageID returns the message ID that was assigned to the
-  /// Relay Message when it was sent to the server
-  int get messageID => _messageID;
+  /// Result returns a map of topics that were requested along with
+  /// the matching return code from the server. This is either the DeliveryMode
+  /// value of the relay request or an error code.
+  Map<String, ByteBuffer> get result => relResult;
 }
 
 /// SubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Subscribe()
 class SubscribeResult extends Result {
-  Map<int, ByteBuffer> subs;
+  @protected
+  int messageID;
   Map<String, ByteBuffer> subResult;
 
   /// Result returns a map of topics that were subscribed to along with
-  /// the matching return code from the server. This is either the Qos
+  /// the matching return code from the server. This is either the deliveryMode
   /// value of the subscription or an error code.
   Map<String, ByteBuffer> get result => subResult;
 }
 
 /// UnsubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Unsubscribe()
-class UnsubscribeResult extends Result {}
+class UnsubscribeResult extends Result {
+  @protected
+  int messageID;
+}
 
 /// DisconnectResult is an extension of result containing the extra fields
 /// required to provide information about calls to Disconnect()

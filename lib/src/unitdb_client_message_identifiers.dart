@@ -12,10 +12,10 @@ class _MessageIdentifiers {
   /// Mid
   int get mid => _mid;
 
-  Map<int, Result> index = Map(); // map[MID]Result
+  Map<int, Result> _messageIds = Map();
 
   void _cleanUp() {
-    index.forEach((mId, result) {
+    _messageIds.forEach((mId, result) {
       switch (result.runtimeType) {
         case PublishResult:
           result.setError("connection lost before Publish completed");
@@ -27,7 +27,9 @@ class _MessageIdentifiers {
           result.setError("connection lost before Unsubscribe completed");
           break;
       }
+      result.flowComplete();
     });
+    _messageIds = Map();
   }
 
   /// Resets the Mid
@@ -37,18 +39,25 @@ class _MessageIdentifiers {
 
   /// Frees the Mid
   _freeID(int id) {
-    index.remove(id);
+    _messageIds.remove(id);
+  }
+
+  _resumeID(int id, Result r) {
+    _messageIds[_mid] = r;
   }
 
   /// Gets next message identifier
   int _nextID(Result r) {
     _mid++;
-    index[_mid] = r;
+    if (_messageIds.containsKey(_mid)) {
+      _nextID(r);
+    }
+    _messageIds[_mid] = r;
     return _mid;
   }
 
   /// Gets type for Mid
   Result _getType(int id) {
-    return index[id];
+    return _messageIds[id];
   }
 }

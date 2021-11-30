@@ -17,10 +17,13 @@ typedef ConnectionLostHandler = void Function();
 /// Can be used for health monitoring outside of the client itself.
 typedef HeartBeatHandler = void Function();
 
+enum PersistenceStore { None, Memory, Localdb }
+
 class Options {
   Options();
 
   List<Uri> servers;
+  PersistenceStore persistenceStore;
   String clientID;
   bool insecureFlag;
   String username;
@@ -30,6 +33,10 @@ class Options {
   int keepAlive;
   Duration pingTimeout;
   Duration connectTimeout;
+  Duration maxReconnectDuration;
+  bool autoReconnect;
+  Duration connectRetryDuration;
+  bool connectRetry;
   String storePath;
   int storeSize;
   Duration storeLogReleaseDuration;
@@ -66,6 +73,7 @@ class Options {
   ///   ConnectTimeout: 30 (seconds)
   Options withDefaultOptions() {
     var o = Options();
+    o.persistenceStore = this.persistenceStore ?? PersistenceStore.None;
     o.insecureFlag = this.insecureFlag ?? false;
     o.username = this.username ?? "";
     o.password = this.password ?? Uint8List(0);
@@ -73,6 +81,10 @@ class Options {
     o.keepAlive = this.keepAlive ?? 60;
     o.pingTimeout = this.pingTimeout ?? Duration(seconds: 60);
     o.connectTimeout = this.connectTimeout ?? Duration(seconds: 60);
+    o.maxReconnectDuration = this.maxReconnectDuration ?? Duration(minutes: 10);
+    o.autoReconnect = this.autoReconnect ?? true;
+    o.connectRetryDuration = this.connectRetryDuration ?? Duration(seconds: 30);
+    o.connectRetry = this.connectRetry ?? false;
     o.writeTimeout = this.writeTimeout ??
         Duration(seconds: 60); // 0 represents timeout disabled
     o.onConnectionHandler = this.onConnectionHandler;
@@ -99,6 +111,12 @@ class Options {
   /// WithClientID  returns an Option which makes client connection and set ClientID
   Options withClientID(String clientID) {
     this.clientID = clientID;
+    return this;
+  }
+
+  /// WithPersistenceStore uses persistence store to persisting messages until it get an acknowledgement from Server.
+  Options withPersistenceStore(PersistenceStore persistenceStore) {
+    this.persistenceStore = persistenceStore;
     return this;
   }
 
@@ -158,6 +176,34 @@ class Options {
   /// Default 30 seconds.
   Options withConnectTimeout(Duration t) {
     this.connectTimeout = t;
+    return this;
+  }
+
+  /// WithMaxReconnectDuration sets the maximum time that will be waited between reconnection attempts
+  /// when connection is lost
+  Options withMaxReconnectDuration(Duration t) {
+    this.maxReconnectDuration = t;
+    return this;
+  }
+
+  /// WithAutoReconnect sets whether the automatic reconnection logic should be used
+  /// when the connection is lost, even if disabled the ConnectionLostHandler is still called
+  Options withAutoReconnect(bool autoReconnect) {
+    this.autoReconnect = autoReconnect;
+    return this;
+  }
+
+  /// WithConnectRetryDuration sets the time that will be waited between connection attempts
+  /// when initially connecting
+  Options withConnectRetryDuration(Duration t) {
+    this.connectRetryDuration = t;
+    return this;
+  }
+
+  /// WithConnectRetry sets whether the connect function will automatically retry the connection in case of a failure
+  /// Setting this to TRUE permits mesages to be published before the connection is established
+  Options withConnectRetry(bool connectRetry) {
+    this.connectRetry = connectRetry;
     return this;
   }
 

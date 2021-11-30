@@ -9,7 +9,10 @@ class ConnectionHandler {
   int get connectionId => _connID;
 
   Map<int, MessageHandler> _callbacks;
+
   Connection _conn;
+
+  Store localStore;
 
   /// The Handler that is managing the connection to the remote server.
   @protected
@@ -39,7 +42,11 @@ class ConnectionHandler {
 
   Future<bool> newConnection(Connection conn, Uri uri, Duration timeout) async {
     this._conn = conn;
-    return connectionHandler.newConnection(uri, timeout);
+    try {
+      return await connectionHandler.newConnection(uri, timeout);
+    } on Exception catch (e) {
+      throw NoConnectionException('${e.toString()}');
+    }
   }
 
   /// Connect takes a connected net.Conn and performs the initial handshake. Paramaters are:
@@ -50,13 +57,14 @@ class ConnectionHandler {
       var m = cm.encode();
       print('connect: ${m.length}');
       await connectionHandler.write(m);
-      if (await connectionHandler.hasNext()) {
-        await connectionHandler.next();
+      if (await connectionHandler?.hasNext() ?? false) {
+        await connectionHandler?.next();
+        return await _verifyCONNACK();
       }
+      return ConnectReturnCode.ErrRefusedServerUnavailable.index;
     } on Exception catch (e) {
-      rethrow;
+      throw NoConnectionException('${e.toString()}');
     }
-    return await _verifyCONNACK();
   }
 
   /// This function is only used for receiving a connack
@@ -64,14 +72,17 @@ class ConnectionHandler {
   /// This prevents receiving incoming data while resume
   /// is in progress if clean session is false.
   Future<int> _verifyCONNACK() async {
-    ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
-    if (ca.returnCode == ConnectReturnCode.Accepted.index) {
-      _connID = ca.connID;
-      _messageIds._reset();
-      return ca.returnCode;
-    }
+    try {
+      ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
+      if (ca.returnCode == ConnectReturnCode.Accepted.index) {
+        _connID = ca.connID;
+        return ca.returnCode;
+      }
 
-    return ca.returnCode;
+      return ca.returnCode;
+    } on Exception catch (e) {
+      throw NoConnectionException('${e.toString()}');
+    }
   }
 
   /// readLoop reads incoming messages from conn.
@@ -82,6 +93,9 @@ class ConnectionHandler {
       await connectionHandler.next();
       var msg = await UtpMessage.read(connectionHandler);
       connectionHandler.shrink();
+
+      /// Persist incoming
+      _conn.storeInbound(msg);
       _handler(msg);
     }
   }
@@ -208,15 +222,23 @@ class ConnectionHandler {
     return () {
       switch (DeliveryMode.values[msg.getInfo().deliveryMode]) {
         case DeliveryMode.express:
-          var p = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
+          var rec = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
               FlowControl.RECEIPT);
-          send.sink.add(MessageAndResult(p));
+
+          /// persist outbound
+          _conn.storeOutbound(rec);
+
+          send.sink.add(MessageAndResult(rec));
           break;
         case DeliveryMode.reliable:
         case DeliveryMode.batch:
-          var p = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
+          var ack = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
               FlowControl.ACKNOWLEDGE);
-          send.sink.add(MessageAndResult(p));
+
+          /// persist outbound
+          _conn.storeOutbound(ack);
+
+          send.sink.add(MessageAndResult(ack));
           break;
       }
     };

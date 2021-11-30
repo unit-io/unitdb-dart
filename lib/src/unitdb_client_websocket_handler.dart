@@ -21,14 +21,14 @@ class WebsocketConnectionHandler {
         closeEvents.cancel();
         errorEvents.cancel();
         _startListening();
-        return r.completer.complete(null);
+        return r.completer.complete();
       });
 
       closeEvents = this._serverConn.onClose.listen((e) {
         print('ClientConnection::attemptConnection - websocket is closed');
         closeEvents.cancel();
         errorEvents.cancel();
-        return r.completer.complete(null);
+        return r.completer.complete();
       });
 
       errorEvents = this._serverConn.onClose.listen((e) {
@@ -36,7 +36,8 @@ class WebsocketConnectionHandler {
             'unitdb_client_connection::attemptConnection - websocket has erred');
         closeEvents.cancel();
         errorEvents.cancel();
-        return r.completer.complete(null);
+        return r.completer.completeError(
+            'unitdb_client_connection::attemptConnection - websocket has erred $e');
       });
     } on Exception {
       final message =
@@ -57,7 +58,7 @@ class WebsocketConnectionHandler {
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
   Future<bool> hasNext() {
-    return inPacket.hasNext;
+    return inPacket?.hasNext;
   }
 
   void next() {
@@ -140,6 +141,8 @@ class WebsocketConnectionHandler {
       });
     } on Exception catch (e) {
       print('ClientConnectionHandler::_server - exception occured $e');
+      throw NoConnectionException(
+          'ClientConnectionHandler::_server - exception occured $e');
     }
   }
 }

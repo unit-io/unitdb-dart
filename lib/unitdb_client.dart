@@ -9,6 +9,7 @@ import 'package:typed_data/typed_data.dart' as typed;
 
 import 'package:unitdb_client/src/unitdb/v1/unitdb.pb.dart' as pbx;
 import 'package:unitdb_client/src/unitdb/v1/unitdb.pbgrpc.dart';
+import 'package:unitdb_client/src/store/unitdb_api_store.dart';
 
 part 'src/utp/unitdb_client_utp_message.dart';
 
