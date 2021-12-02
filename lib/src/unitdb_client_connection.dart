@@ -48,6 +48,7 @@ class Connection with ConnectionHandler {
   /// The context will be used in the grpc stream connection.
   Future<Result> connect() async {
     var r = ConnectResult(); // Connect to the server
+    var sleep = Duration(seconds: 1);
     if (_opts.servers.isEmpty) {
       r.setError("no servers defined to connect to");
       // no servers defined to connect to.
@@ -75,7 +76,10 @@ class Connection with ConnectionHandler {
         r.returnCode = rc.index;
         if (rc != ConnectReturnCode.Accepted) {
           if (_opts.connectRetry) {
-            await Future.delayed(_opts.connectRetryDuration);
+            await Future.delayed(sleep);
+            if (sleep < _opts.maxConnectRetryDuration) {
+              sleep *= 2;
+            }
             if (_isClosed()) {
               continue retry;
             }
@@ -98,16 +102,6 @@ class Connection with ConnectionHandler {
 
     _setConnected();
 
-    if (!_opts.cleanSession) {
-      await _resume(_connID);
-    } else {
-      _messageIds._cleanUp();
-    }
-
-    if (_opts.onConnectionHandler != null) {
-      _opts.onConnectionHandler(this);
-    }
-
     if (_opts.keepAlive != 0) {
       _pingOutstanding = 0;
       _updateLastAction();
@@ -119,6 +113,16 @@ class Connection with ConnectionHandler {
     _waitGroup.add(_writeLoop()); // send messages to servers
     _dispatcher(); // dispatch messages to client
 
+    if (!_opts.cleanSession) {
+      await _resume(_connID);
+    } else {
+      _messageIds._cleanUp();
+    }
+
+    if (_opts.onConnectionHandler != null) {
+      _opts.onConnectionHandler(this);
+    }
+
     return r;
   }
 
@@ -126,23 +130,33 @@ class Connection with ConnectionHandler {
     int returnCode;
     for (var uri in _opts.servers) {
       try {
-        await newConnection(this, uri, _opts.connectTimeout);
-        // get Connect message from options.
-        var cm = Connect.withOptions(_opts, uri);
-        returnCode = await _connect(cm);
+        String error;
+        await newConnection(this, uri, _opts.connectTimeout)
+            .catchError((dynamic e) {
+          error =
+              'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. $e}';
+          print(error);
+        }).whenComplete(() async {
+          if (error == null) {
+            // get Connect message from options.
+            var cm = Connect.withOptions(_opts, uri);
+            returnCode = await _connect(cm);
+          }
+        });
         if (returnCode == ConnectReturnCode.Accepted.index) {
-          break;
+          return ConnectReturnCode.values[returnCode];
         }
       } on Exception catch (e) {
         final message =
             'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
+        print(message);
         throw NoConnectionException(message);
       }
       if (connectionHandler != null) {
         connectionHandler.close();
       }
     }
-    return ConnectReturnCode.values[returnCode];
+    return ConnectReturnCode.ErrRefusedServerUnavailable;
   }
 
 // internal function used to reconnect the client when it loses its connection
@@ -157,7 +171,16 @@ class Connection with ConnectionHandler {
           break;
         }
       } on Exception catch (e) {
-        rethrow;
+        final message =
+            'Connection::reconnect - Exception occured ${e.toString()}';
+        print(message);
+        _setClosed();
+        if (connectionHandler != null) {
+          connectionHandler.close();
+        }
+        localStore?.disconnect();
+        localStore = null;
+        throw NoConnectionException(message);
       }
       await Future.delayed(sleep);
       if (sleep < _opts.maxReconnectDuration) {
@@ -173,11 +196,20 @@ class Connection with ConnectionHandler {
       }
     }
 
+    if (_opts.keepAlive != 0) {
+      _pingOutstanding = 0;
+      _updateLastAction();
+      _updateLastTouched();
+      _waitGroup.add(_keepAlive());
+    }
+
+    _readLoop(); // process incoming messages
+
+    _resume(_connID);
+
     if (_opts.onConnectionHandler != null) {
       _opts.onConnectionHandler(this);
     }
-
-    _resume(_connID);
   }
 
   /// disconnect will disconnect the connection to the server
@@ -190,7 +222,6 @@ class Connection with ConnectionHandler {
     var p = Disconnect();
     var r = DisconnectResult();
     send.sink.add(MessageAndResult(p, r: r));
-    // await r.get(opts.writeTimeout);
 
     await _close();
     _messageIds._cleanUp();

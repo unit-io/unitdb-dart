@@ -53,7 +53,6 @@ class ControlMessage implements UtpMessage {
             fh = FixedHeader(pbx.MessageType.RELAY, pbx.FlowControl.ACKNOWLEDGE,
                 data.length);
             break;
-
           case MessageType.SUBSCRIBE:
             fh = FixedHeader(pbx.MessageType.SUBSCRIBE,
                 pbx.FlowControl.ACKNOWLEDGE, data.length);

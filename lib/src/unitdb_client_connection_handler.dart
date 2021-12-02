@@ -55,10 +55,8 @@ class ConnectionHandler {
   Future<int> _connect(Connect cm) async {
     try {
       var m = cm.encode();
-      print('connect: ${m.length}');
       await connectionHandler.write(m);
-      if (await connectionHandler?.hasNext() ?? false) {
-        await connectionHandler?.next();
+      if (await connectionHandler.hasNext()) {
         return await _verifyCONNACK();
       }
       return ConnectReturnCode.ErrRefusedServerUnavailable.index;
@@ -73,6 +71,7 @@ class ConnectionHandler {
   /// is in progress if clean session is false.
   Future<int> _verifyCONNACK() async {
     try {
+      await connectionHandler.next();
       ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
       if (ca.returnCode == ConnectReturnCode.Accepted.index) {
         _connID = ca.connID;
@@ -92,7 +91,6 @@ class ConnectionHandler {
     while (await connectionHandler.hasNext()) {
       await connectionHandler.next();
       var msg = await UtpMessage.read(connectionHandler);
-      connectionHandler.shrink();
 
       /// Persist incoming
       _conn.storeInbound(msg);
@@ -192,6 +190,9 @@ class ConnectionHandler {
       pingInterval = _opts.keepAlive ~/ 2;
     }
 
+    // /// Send an initial ping request
+    // connectionHandler.write(Pingreq().encode());
+
     _keepAliveTimer =
         await Timer.periodic(Duration(seconds: pingInterval), (timer) async {
       final sinceLastSent = _conn._timeNow().difference(_lastAction).inSeconds;
@@ -204,7 +205,9 @@ class ConnectionHandler {
         if (_pingOutstanding == 0) {
           var ping = Pingreq();
           var m = ping.encode();
+          _pingOutstanding++;
           connectionHandler.write(m);
+          _conn._updateLastAction();
           pingSent = _conn._timeNow();
         }
       }

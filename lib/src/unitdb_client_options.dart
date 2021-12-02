@@ -35,7 +35,7 @@ class Options {
   Duration connectTimeout;
   Duration maxReconnectDuration;
   bool autoReconnect;
-  Duration connectRetryDuration;
+  Duration maxConnectRetryDuration;
   bool connectRetry;
   String storePath;
   int storeSize;
@@ -83,7 +83,8 @@ class Options {
     o.connectTimeout = this.connectTimeout ?? Duration(seconds: 60);
     o.maxReconnectDuration = this.maxReconnectDuration ?? Duration(minutes: 10);
     o.autoReconnect = this.autoReconnect ?? true;
-    o.connectRetryDuration = this.connectRetryDuration ?? Duration(seconds: 30);
+    o.maxConnectRetryDuration =
+        this.maxConnectRetryDuration ?? Duration(seconds: 30);
     o.connectRetry = this.connectRetry ?? false;
     o.writeTimeout = this.writeTimeout ??
         Duration(seconds: 60); // 0 represents timeout disabled
@@ -195,8 +196,8 @@ class Options {
 
   /// WithConnectRetryDuration sets the time that will be waited between connection attempts
   /// when initially connecting
-  Options withConnectRetryDuration(Duration t) {
-    this.connectRetryDuration = t;
+  Options withMaxConnectRetryDuration(Duration t) {
+    this.maxConnectRetryDuration = t;
     return this;
   }
 

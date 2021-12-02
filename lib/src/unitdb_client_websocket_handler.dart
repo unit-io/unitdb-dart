@@ -5,6 +5,14 @@ class WebsocketConnectionHandler {
 
   StreamQueue<MessageEvent> inPacket;
 
+  /// InMsg is the type to use for reading request data from the streaming
+  /// endpoint. This must be a non-nil allocated value and must NOT point to
+  /// the same value as OutMsg since they may be used concurrently.
+  ///
+  /// The Reset method will be called on InMsg during Reads so data you
+  /// set initially will be lost.
+  ByteBuffer inMsg;
+
   /// readOffset tracks where we've read up to if we're reading a result
   /// that didn't fully fit into the target slice. See Read.
   int readOffset;
@@ -12,6 +20,8 @@ class WebsocketConnectionHandler {
   Future<bool> newConnection(Uri uri, Duration timeout) {
     var r = ConnectResult();
     this.readOffset = 0;
+    this.inMsg = ByteBuffer(typed.Uint8Buffer());
+
     try {
       this._serverConn = WebSocket(uri.toString());
       this._serverConn.binaryType = 'arraybuffer';
@@ -25,23 +35,25 @@ class WebsocketConnectionHandler {
       });
 
       closeEvents = this._serverConn.onClose.listen((e) {
-        print('ClientConnection::attemptConnection - websocket is closed');
+        print(
+            'WebsocketConnectionHandler::newConnection - websocket is closed');
         closeEvents.cancel();
         errorEvents.cancel();
-        return r.completer.complete();
+        return r.completer.completeError(
+            'WebsocketConnectionHandler::newConnection - websocket is closed');
       });
 
       errorEvents = this._serverConn.onClose.listen((e) {
         print(
-            'unitdb_client_connection::attemptConnection - websocket has erred');
+            'WebsocketConnectionHandler::newConnection - websocket has erred');
         closeEvents.cancel();
         errorEvents.cancel();
         return r.completer.completeError(
-            'unitdb_client_connection::attemptConnection - websocket has erred $e');
+            'WebsocketConnectionHandler::newConnection - websocket has erred $e');
       });
     } on Exception {
       final message =
-          'ClientConnection::attemptConnection - The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
+          'WebsocketConnectionHandler::newConnection - The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
       throw NoConnectionException(message);
     }
     print(
@@ -49,21 +61,12 @@ class WebsocketConnectionHandler {
     return r.completer.future;
   }
 
-  /// InMsg is the type to use for reading request data from the streaming
-  /// endpoint. This must be a non-nil allocated value and must NOT point to
-  /// the same value as OutMsg since they may be used concurrently.
-  ///
-  /// The Reset method will be called on InMsg during Reads so data you
-  /// set initially will be lost.
-  final inMsg = ByteBuffer(typed.Uint8Buffer());
-
   Future<bool> hasNext() {
     return inPacket?.hasNext;
   }
 
   void next() {
-    inPacket.next
-        .then((inMsg) => this.inMsg.writeList(Uint8List.view(inMsg.data)));
+    inPacket.next.then((event) => inMsg.writeList(Uint8List.view(event.data)));
   }
 
   /// read implements stream reader.
@@ -82,7 +85,7 @@ class WebsocketConnectionHandler {
 
       // Reset our response value for the next read and so that we
       // don't potentially store a large response structure in memory.
-      inMsg.reset();
+      inMsg.shrink();
 
       return p;
     }
@@ -99,7 +102,7 @@ class WebsocketConnectionHandler {
     do {
       // Write our data into the request. Any error means we abort.
       var data = ByteData.view(p.read(p.length).buffer);
-      _serverConn.sendTypedData(data);
+      _serverConn?.sendTypedData(data);
       // We sent partial data so we continue writing the remainder
     } while (total == p.availableBytes);
 
@@ -110,7 +113,7 @@ class WebsocketConnectionHandler {
 
   /// shrink the inMsg ByteBuffer.
   void shrink() {
-    inMsg.removeRange(0, readOffset);
+    inMsg.shrink();
     readOffset = 0;
   }
 
@@ -124,6 +127,8 @@ class WebsocketConnectionHandler {
     if (_serverConn != null) {
       _serverConn.close();
       _serverConn = null;
+      inPacket?.cancel();
+      inPacket = null;
     }
   }
 
@@ -132,17 +137,19 @@ class WebsocketConnectionHandler {
     try {
       this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
       _serverConn.onClose.listen((e) {
-        print('ClientConnectionHandler::_server - onClose ${e.reason}');
+        print(
+            'WebsocketConnectionHandler::newConnection - onClose ${e.reason}');
         close();
       });
       _serverConn.onError.listen((e) {
-        print('ClientConnectionHandler::_server - onError ${e.toString()}');
+        print(
+            'WebsocketConnectionHandler::newConnection - onError ${e.toString()}');
         close();
       });
     } on Exception catch (e) {
-      print('ClientConnectionHandler::_server - exception occured $e');
+      print('WebsocketConnectionHandler::newConnection - exception occured $e');
       throw NoConnectionException(
-          'ClientConnectionHandler::_server - exception occured $e');
+          'WebsocketConnectionHandler::newConnection - exception occured $e');
     }
   }
 }

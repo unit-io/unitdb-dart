@@ -39,7 +39,7 @@ class GrpcConnectionHandler {
   }
 
   void next() {
-    inPacket.next.then((inMsg) => this.inMsg.writeList(inMsg.data));
+    inPacket.next.then((event) => this.inMsg.writeList(event.data));
   }
 
   /// read implements stream reader.
@@ -58,7 +58,7 @@ class GrpcConnectionHandler {
 
       // Reset our response value for the next read and so that we
       // don't potentially store a large response structure in memory.
-      inMsg.reset();
+      inMsg.shrink();
 
       return p;
     }
@@ -88,7 +88,7 @@ class GrpcConnectionHandler {
 
   /// shrink the inMsg ByteBuffer.
   void shrink() {
-    inMsg.removeRange(0, readOffset);
+    inMsg.shrink();
     readOffset = 0;
   }
 
