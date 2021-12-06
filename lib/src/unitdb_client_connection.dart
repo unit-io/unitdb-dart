@@ -115,8 +115,6 @@ class Connection with ConnectionHandler {
 
     if (!_opts.cleanSession) {
       await _resume(_connID);
-    } else {
-      _messageIds._cleanUp();
     }
 
     if (_opts.onConnectionHandler != null) {
@@ -244,6 +242,9 @@ class Connection with ConnectionHandler {
     // (including after sending a DisconnectPacket) as such we only do cleanup etc if the
     // routines were actually running and are not being disconnected at users request
     if (!_isClosed()) {
+      if (_opts.cleanSession && !_opts.autoReconnect) {
+        _messageIds._cleanUp();
+      }
       if (_opts.autoReconnect) {
         reconnect();
       }
