@@ -4,7 +4,7 @@ import 'package:unitdb_client/src/db/localdb/unitdb_client_db_localdb_adapter.da
 class SharedDb {
   static LocalDb localDb(String userId) {
     final dbName = 'db_$userId';
-    final queryExecutor = WebDatabase(dbName, logStatements: true);
+    final queryExecutor = WebDatabase(dbName, logStatements: false);
     return LocalDb(userId, queryExecutor);
   }
 }

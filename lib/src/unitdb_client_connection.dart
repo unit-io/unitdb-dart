@@ -396,6 +396,9 @@ class Connection with ConnectionHandler {
   /// Resume message Ids for publish message to ensure these are are not duplicated
   Future<void> _resumeMessageIds() async {
     final keys = await localStore?.keys();
+    if (keys == null) {
+      return;
+    }
     for (final key in keys) {
       final message = await localStore?.getMessage(connectionId, key);
       if (message == null) {
@@ -412,7 +415,10 @@ class Connection with ConnectionHandler {
 
   // Load all stored messages and resend them to ensure DeliveryMode even after an application crash.
   Future<void> _resume(int connectionId) async {
-    final keys = await localStore?.keys() ?? [];
+    final keys = await localStore?.keys();
+    if (keys == null) {
+      return;
+    }
     for (final key in keys) {
       final message = await localStore?.getMessage(connectionId, key);
       if (message == null) {
