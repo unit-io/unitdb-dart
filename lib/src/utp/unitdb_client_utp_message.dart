@@ -18,7 +18,7 @@ enum ConnectReturnCode {
   Accepted,
   ErrRefusedBadProtocolVersion,
   ErrRefusedIDRejected,
-  ErrRefusedbADID,
+  ErrRefusedBadID,
   ErrRefusedServerUnavailable,
   ErrNotAuthorised,
   ErrBadRequest
@@ -32,8 +32,12 @@ abstract class UtpMessage {
 
   /// read unpacks the Message from the provided stream.
   static Future<UtpMessage> read(dynamic r) async {
+    final readCompleter = Completer<UtpMessage>();
     var fh = FixedHeader.internal();
-    await fh.unpack(r);
+    await fh.unpack(r).catchError((dynamic e) {
+      final message = 'UtpMessage::read - error reading utp message $e}';
+      readCompleter.completeError(message);
+    });
 
     // Check for empty Messages
     switch (fh.messageType) {
@@ -41,20 +45,25 @@ abstract class UtpMessage {
         return Disconnect();
     }
 
-    final rawMsg = await r.read(fh.messageSize);
-
-    // unpack the body
     UtpMessage msg;
-    if (fh.flowControl != FlowControl.NONE) {
-      return ControlMessage.unpackControlMessage(fh, rawMsg);
-    }
 
-    switch (fh.messageType) {
-      case MessageType.PUBLISH:
-        msg = Publish.unpack(rawMsg);
-        break;
-      default:
-        return msg;
+    try {
+      final rawMsg = await r.read(fh.messageSize);
+
+      // unpack the body
+      if (fh.flowControl != FlowControl.NONE) {
+        return ControlMessage.unpackControlMessage(fh, rawMsg);
+      }
+
+      switch (fh.messageType) {
+        case MessageType.PUBLISH:
+          msg = Publish.unpack(rawMsg);
+          break;
+        default:
+          return msg;
+      }
+    } catch (e) {
+      readCompleter.completeError(e.toString());
     }
 
     return msg;
@@ -102,12 +111,20 @@ class FixedHeader {
   }
 
   Future<void> unpack(dynamic r) async {
-    final fhSize = await decodeLength(r);
+    final unpackCompleter = Completer<bool>();
+    try {
+      final fhSize = await decodeLength(r);
 
-    // read FixedHeader
-    final head = await r.read(fhSize);
+      // read FixedHeader
+      final head = await r.read(fhSize);
 
-    fh.mergeFromBuffer(head);
+      fh.mergeFromBuffer(head);
+      unpackCompleter.complete();
+    } catch (e) {
+      unpackCompleter.completeError(e.toString());
+    }
+
+    return unpackCompleter.future;
   }
 
   static typed.Uint8Buffer encodeLength(var length) {

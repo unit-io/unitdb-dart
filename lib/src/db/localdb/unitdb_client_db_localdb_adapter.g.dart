@@ -200,28 +200,29 @@ class MessagesCompanion extends UpdateCompanion<MessageEntity> {
 
 class $MessagesTable extends Messages
     with TableInfo<$MessagesTable, MessageEntity> {
-  final GeneratedDatabase _db;
+  @override
+  final GeneratedDatabase attachedDatabase;
   final String _alias;
-  $MessagesTable(this._db, [this._alias]);
+  $MessagesTable(this.attachedDatabase, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
   GeneratedColumn<int> _id;
   @override
   GeneratedColumn<int> get id =>
       _id ??= GeneratedColumn<int>('id', aliasedName, false,
-          typeName: 'INTEGER', requiredDuringInsert: false);
+          type: const IntType(), requiredDuringInsert: false);
   final VerificationMeta _connectionIdMeta =
       const VerificationMeta('connectionId');
   GeneratedColumn<int> _connectionId;
   @override
   GeneratedColumn<int> get connectionId => _connectionId ??=
       GeneratedColumn<int>('connection_id', aliasedName, false,
-          typeName: 'INTEGER', requiredDuringInsert: true);
+          type: const IntType(), requiredDuringInsert: true);
   final VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
   GeneratedColumn<DateTime> _createdAt;
   @override
   GeneratedColumn<DateTime> get createdAt =>
       _createdAt ??= GeneratedColumn<DateTime>('created_at', aliasedName, false,
-          typeName: 'INTEGER',
+          type: const IntType(),
           requiredDuringInsert: false,
           defaultValue: currentDateAndTime);
   final VerificationMeta _utpMessageMeta = const VerificationMeta('utpMessage');
@@ -229,7 +230,7 @@ class $MessagesTable extends Messages
   @override
   GeneratedColumn<Uint8List> get utpMessage => _utpMessage ??=
       GeneratedColumn<Uint8List>('utp_message', aliasedName, true,
-          typeName: 'BLOB', requiredDuringInsert: false);
+          type: const BlobType(), requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
       [id, connectionId, createdAt, utpMessage];
@@ -276,7 +277,7 @@ class $MessagesTable extends Messages
 
   @override
   $MessagesTable createAlias(String alias) {
-    return $MessagesTable(_db, alias);
+    return $MessagesTable(attachedDatabase, alias);
   }
 }
 

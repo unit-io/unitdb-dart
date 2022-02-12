@@ -42,27 +42,26 @@ class ConnectionHandler {
 
   Future<bool> newConnection(Connection conn, Uri uri, Duration timeout) async {
     this._conn = conn;
-    try {
-      return await connectionHandler.newConnection(uri, timeout);
-    } on Exception catch (e) {
-      throw NoConnectionException('${e.toString()}');
-    }
+    return connectionHandler.newConnection(uri, timeout);
   }
 
   /// Connect takes a connected net.Conn and performs the initial handshake. Paramaters are:
   /// conn - Connected net.Conn
   /// cm - Connect Packet
   Future<int> _connect(Connect cm) async {
-    try {
-      var m = cm.encode();
-      await connectionHandler.write(m);
-      if (await connectionHandler.hasNext()) {
-        return await _verifyCONNACK();
-      }
-      return ConnectReturnCode.ErrRefusedServerUnavailable.index;
-    } on Exception catch (e) {
+    // try {
+    var m = cm.encode();
+    await connectionHandler.write(m);
+    final next = await connectionHandler
+        .hasNext()
+        .timeout(_conn._opts.connectTimeout)
+        .catchError((dynamic e) {
       throw NoConnectionException('${e.toString()}');
+    });
+    if (next) {
+      return _verifyCONNACK();
     }
+    return ConnectReturnCode.ErrRefusedServerUnavailable.index;
   }
 
   /// This function is only used for receiving a connack
@@ -70,27 +69,40 @@ class ConnectionHandler {
   /// This prevents receiving incoming data while resume
   /// is in progress if clean session is false.
   Future<int> _verifyCONNACK() async {
-    try {
-      await connectionHandler.next();
-      ConnectAcknowledge ca = await UtpMessage.read(connectionHandler);
-      if (ca.returnCode == ConnectReturnCode.Accepted.index) {
-        _connID = ca.connID;
-        return ca.returnCode;
-      }
-
-      return ca.returnCode;
-    } on Exception catch (e) {
+    await connectionHandler
+        .next(_conn._opts.connectTimeout)
+        .catchError((dynamic e) {
       throw NoConnectionException('${e.toString()}');
+    });
+    ConnectAcknowledge ca =
+        await UtpMessage.read(connectionHandler).catchError((dynamic e) {
+      throw NoConnectionException('${e.toString()}');
+    });
+    if (ca?.returnCode == ConnectReturnCode.Accepted.index) {
+      _connID = ca.connID;
+      return ca.returnCode;
     }
+
+    return ca?.returnCode;
   }
 
   /// readLoop reads incoming messages from conn.
   void _readLoop() async {
-    // await for (var inMsg in serverConn.stream) {
-    //   serverConn.inPacket.sink.add(inMsg);
-    while (await connectionHandler.hasNext()) {
-      await connectionHandler.next();
-      var msg = await UtpMessage.read(connectionHandler);
+    while (await connectionHandler.hasNext().catchError((dynamic e) {
+      throw NoConnectionException('${e.toString()}');
+    })) {
+      if (_conn._isClosed()) {
+        return;
+      }
+      await connectionHandler
+          .next(_conn._opts.connectTimeout)
+          .catchError((dynamic e) {
+        throw NoConnectionException('${e.toString()}');
+      });
+      var msg =
+          await UtpMessage.read(connectionHandler).catchError((dynamic e) {
+        throw Exception('${e.toString()}');
+      });
 
       /// Persist incoming
       _conn.storeInbound(msg);
@@ -195,6 +207,10 @@ class ConnectionHandler {
 
     _keepAliveTimer =
         await Timer.periodic(Duration(seconds: pingInterval), (timer) async {
+      if (_conn._isClosed()) {
+        timer.cancel();
+      }
+
       final sinceLastSent = _conn._timeNow().difference(_lastAction).inSeconds;
       final sinceLastReceived =
           _conn._timeNow().difference(_lastTouched).inSeconds;

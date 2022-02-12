@@ -109,9 +109,25 @@ class Connection with ConnectionHandler {
       _waitGroup.add(_keepAlive());
     }
 
-    _readLoop(); // process incoming messages
-    _waitGroup.add(_writeLoop()); // send messages to servers
-    _dispatcher(); // dispatch messages to client
+    runZonedGuarded(() async {
+      try {
+        _readLoop(); // process incoming messages
+        _waitGroup.add(_writeLoop()); // send messages to servers
+        _dispatcher(); // dispatch messages to client
+      } on Exception catch (e) {
+        final error =
+            'Connection - internal connection lost to the unitdb messaging server. ${e.toString()}}';
+        print(error);
+      }
+    }, (e, s) {
+      final error =
+          'Connection - internal connection lost to the unitdb messaging server. ${e.toString()}; ${s.toString()}';
+      print(error);
+      if (connectionHandler != null) {
+        connectionHandler.close();
+      }
+      _conn._internalConnLost();
+    });
 
     if (!_opts.cleanSession) {
       await _resume(_connID);
@@ -126,29 +142,33 @@ class Connection with ConnectionHandler {
 
   Future<ConnectReturnCode> _attemptConnection() async {
     int returnCode;
+
     for (var uri in _opts.servers) {
-      try {
-        String error;
+      String error;
+      await runZonedGuarded(() async {
         await newConnection(this, uri, _opts.connectTimeout)
+            .timeout(_opts.connectTimeout)
             .catchError((dynamic e) {
           error =
               'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. $e}';
           print(error);
-        }).whenComplete(() async {
-          if (error == null) {
-            // get Connect message from options.
-            var cm = Connect.withOptions(_opts, uri);
-            returnCode = await _connect(cm);
-          }
         });
-        if (returnCode == ConnectReturnCode.Accepted.index) {
-          return ConnectReturnCode.values[returnCode];
+        if (error == null) {
+          // get Connect message from options.
+          var cm = Connect.withOptions(_opts, uri);
+          returnCode = await _connect(cm).catchError((dynamic e) {
+            final message =
+                'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
+            print(message);
+          });
         }
-      } on Exception catch (e) {
-        final message =
-            'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
-        print(message);
-        throw NoConnectionException(message);
+      }, (e, s) {
+        error =
+            'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}; ${s.toString()}';
+        print(error);
+      });
+      if (returnCode == ConnectReturnCode.Accepted.index) {
+        return ConnectReturnCode.Accepted;
       }
       if (connectionHandler != null) {
         connectionHandler.close();
@@ -201,7 +221,23 @@ class Connection with ConnectionHandler {
       _waitGroup.add(_keepAlive());
     }
 
-    _readLoop(); // process incoming messages
+    runZonedGuarded(() async {
+      try {
+        _readLoop(); // process incoming messages
+      } on Exception catch (e) {
+        final error =
+            'Connection - internal connection lost to the unitdb messaging server. ${e.toString()}}';
+        print(error);
+      }
+    }, (e, s) {
+      final error =
+          'Connection - internal connection lost to the unitdb messaging server. ${e.toString()}; ${s.toString()}';
+      print(error);
+      if (connectionHandler != null) {
+        connectionHandler.close();
+      }
+      _conn._internalConnLost();
+    });
 
     _resume(_connID);
 

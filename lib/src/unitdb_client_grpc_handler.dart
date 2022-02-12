@@ -1,28 +1,64 @@
 part of unitdb_client;
 
+class FixedConnectionClientChannel extends ClientChannelBase {
+  final Http2ClientConnection clientConnection;
+  List<ConnectionState> states = <ConnectionState>[];
+  FixedConnectionClientChannel(this.clientConnection) {
+    clientConnection.onStateChanged = (c) => states.add(c.state);
+  }
+
+  @override
+  ClientConnection createConnection() => clientConnection;
+}
+
 class GrpcConnectionHandler {
-  ClientChannel _channel;
+  FixedConnectionClientChannel _channel;
   UnitdbClient _serverConn;
 
   ResponseStream<pbx.Packet> stream;
   StreamQueue<pbx.Packet> inPacket;
-  final outPacket = StreamController<pbx.Packet>();
+  StreamController<pbx.Packet> outPacket;
 
   /// readOffset tracks where we've read up to if we're reading a result
   /// that didn't fully fit into the target slice. See Read.
   int readOffset;
 
-  Future<bool> newConnection(Uri uri, Duration timeout) {
+  Future<bool> newConnection(Uri uri, Duration timeout) async {
     var r = ConnectResult();
     this.readOffset = 0;
-    this._channel = ClientChannel(uri.host,
-        port: uri.port,
-        options:
-            const ChannelOptions(credentials: ChannelCredentials.insecure()));
-    this._serverConn = UnitdbClient(this._channel);
-    this.stream = _serverConn.stream(outPacket.stream);
-    this.inPacket = StreamQueue<pbx.Packet>(this.stream);
-    r.completer.complete(null);
+
+    try {
+      this._channel = FixedConnectionClientChannel(Http2ClientConnection(
+        uri.host,
+        uri.port,
+        ChannelOptions(
+          credentials: ChannelCredentials.insecure(),
+        ),
+      ));
+
+      this._serverConn = UnitdbClient(this._channel);
+      outPacket = StreamController<pbx.Packet>();
+      this.stream = _serverConn.stream(outPacket.stream);
+      this.stream.handleError((e) {
+        final message =
+            'GrpcConnectionHandler::Connection error ${e.toString()}';
+        print(message);
+        close();
+        r.completer.completeError(message);
+      });
+      this.inPacket = StreamQueue<pbx.Packet>(this.stream);
+      this
+          ._channel
+          .getConnection()
+          .then((connection) => r.completer.complete());
+    } on Exception {
+      final message =
+          'GrpcConnectionHandler::newConnection - The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
+      throw NoConnectionException(message);
+    }
+
+    print(
+        'GrpcConnectionHandler::newConnection - connection is waiting ${uri.toString()}');
     return r.completer.future;
   }
 
@@ -35,11 +71,34 @@ class GrpcConnectionHandler {
   final inMsg = ByteBuffer(typed.Uint8Buffer());
 
   Future<bool> hasNext() {
-    return inPacket.hasNext;
+    final nextCompleter = Completer<bool>();
+    inPacket.hasNext
+        .then((value) => nextCompleter.complete(value))
+        .catchError((e) {
+      final message =
+          'GrpcConnectionHandler::read - error occured ${e.toString()}';
+      print(message);
+      nextCompleter.completeError(message);
+    });
+
+    return nextCompleter.future;
   }
 
-  void next() {
-    inPacket.next.then((event) => this.inMsg.writeList(event.data));
+  Future<bool> next(Duration timeout) async {
+    final nextCompleter = Completer<bool>();
+    await inPacket.next.timeout(timeout, onTimeout: () {
+      nextCompleter.complete(false);
+      return;
+    }).then((message) {
+      inMsg.writeList(message.data);
+      nextCompleter.complete();
+    }).catchError((e) {
+      final error =
+          'GrpcConnectionHandler::read - error occured ${e.toString()}';
+      print(error);
+      nextCompleter.completeError(error);
+    });
+    return nextCompleter.future;
   }
 
   /// read implements stream reader.
@@ -73,10 +132,13 @@ class GrpcConnectionHandler {
   Future<int> write(ByteBuffer p) async {
     var total = p.length;
     do {
+      if (outPacket.isClosed) {
+        return 0;
+      }
       // Write our data into the request. Any error means we abort.
       final packet = pbx.Packet();
       packet.data = p.read(p.length);
-      outPacket.sink.add(packet);
+      outPacket?.sink?.add(packet);
 
       // We sent partial data so we continue writing the remainder
     } while (total == p.availableBytes);
@@ -100,10 +162,15 @@ class GrpcConnectionHandler {
   /// for that to understand the semantics of this call.
   void close() {
     if (_serverConn != null) {
-      inPacket.cancel();
-      outPacket.close();
+      print('close called');
       _channel.shutdown();
       _serverConn = null;
+      outPacket.close();
+      outPacket = null;
+      inPacket.cancel();
+      inPacket = null;
+      stream.cancel();
+      stream = null;
     }
   }
 }

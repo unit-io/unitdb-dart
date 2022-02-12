@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:unitdb_client/unitdb_client.dart' as udb;
-import 'package:unitdb_client/unitdb_web_client.dart' as web;
+// import 'package:unitdb_client/unitdb_web_client.dart' as web;
 
 class SendMessageDialog extends StatefulWidget {
-  // final unitdb.Client client;
-  final web.WebClient client;
+  final udb.Client client;
+  // final web.WebClient client;
 
   const SendMessageDialog({Key key, @required this.client}) : super(key: key);
 

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:unitdb_client/unitdb_client.dart' as udb;
-import 'package:unitdb_client/unitdb_web_client.dart' as web;
+// import 'package:unitdb_client/unitdb_web_client.dart' as web;
 import 'package:unitdb_client_example/models/message.dart';
 import 'package:unitdb_client_example/dialogs/send_message.dart';
 import 'package:connectivity/connectivity.dart';
@@ -25,10 +25,10 @@ class _MyAppState extends State<MyApp> {
   PageController _pageController;
   int _page = 0;
 
-  // String server = 'grpc://10.0.2.2:6080';
-  // unitdb.Client client;
-  String server = 'ws://localhost:6060';
-  web.WebClient client;
+  String server = 'grpc://10.0.2.2:6080';
+  udb.Client client;
+  // String server = 'ws://localhost:6060';
+  // web.WebClient client;
 
   StreamSubscription subscription;
 
@@ -334,7 +334,7 @@ class _MyAppState extends State<MyApp> {
     /// The client identifier can be a maximum length of 23 characters. If a port is not specified the standard port
     /// of 1883 is used.
     /// If you want to use websockets rather than TCP see below.
-    client = web.WebClient(
+    client = udb.Client(
         server, "UCBFDONCNJLaKMCAIeJBaOVfbAXUZHNPLDKKLDKLHZHKYIZLCDPQ", opts);
 
     /// A websocket URL must start with ws:// or wss:// or Dart will throw an exception.

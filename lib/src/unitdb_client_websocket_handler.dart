@@ -22,51 +22,70 @@ class WebsocketConnectionHandler {
     this.readOffset = 0;
     this.inMsg = ByteBuffer(typed.Uint8Buffer());
 
-    try {
-      this._serverConn = WebSocket(uri.toString());
-      this._serverConn.binaryType = 'arraybuffer';
-      var closeEvents;
-      var errorEvents;
-      this._serverConn.onOpen.listen((e) {
-        closeEvents.cancel();
-        errorEvents.cancel();
-        _startListening();
-        return r.completer.complete();
-      });
+    print(uri.toString());
+    this._serverConn = WebSocket(uri.toString());
+    this._serverConn.binaryType = 'arraybuffer';
+    var closeEvents;
+    var errorEvents;
+    this._serverConn.onOpen.listen((e) {
+      closeEvents.cancel();
+      errorEvents.cancel();
+      _startListening();
+      return r.completer.complete();
+    });
 
-      closeEvents = this._serverConn.onClose.listen((e) {
-        print(
-            'WebsocketConnectionHandler::newConnection - websocket is closed');
-        closeEvents.cancel();
-        errorEvents.cancel();
-        return r.completer.completeError(
-            'WebsocketConnectionHandler::newConnection - websocket is closed');
-      });
+    closeEvents = this._serverConn.onClose.listen((e) {
+      print('WebsocketConnectionHandler::newConnection - websocket is closed');
+      closeEvents.cancel();
+      errorEvents.cancel();
+      return r.completer.completeError(
+          'WebsocketConnectionHandler::newConnection - websocket is closed');
+    });
 
-      errorEvents = this._serverConn.onClose.listen((e) {
-        print(
-            'WebsocketConnectionHandler::newConnection - websocket has erred');
-        closeEvents.cancel();
-        errorEvents.cancel();
-        return r.completer.completeError(
-            'WebsocketConnectionHandler::newConnection - websocket has erred $e');
-      });
-    } on Exception {
-      final message =
-          'WebsocketConnectionHandler::newConnection - The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
-      throw NoConnectionException(message);
-    }
+    errorEvents = this._serverConn.onError.listen((e) {
+      print(
+          'WebsocketConnectionHandler::newConnection - websocket has erred $e');
+      closeEvents.cancel();
+      errorEvents.cancel();
+      return r.completer.completeError(
+          'WebsocketConnectionHandler::newConnection - websocket has erred $e');
+    });
+
     print(
         'WebsocketConnectionHandler::newConnection - connection is waiting ${uri.toString()}');
     return r.completer.future;
   }
 
   Future<bool> hasNext() {
-    return inPacket?.hasNext;
+    final nextCompleter = Completer<bool>();
+    inPacket.hasNext
+        .then((value) => nextCompleter.complete(value))
+        .catchError((e) {
+      final message =
+          'GrpcConnectionHandler::read - error occured ${e.toString()}';
+      print(message);
+      nextCompleter.completeError(message);
+    });
+
+    return nextCompleter.future;
   }
 
-  void next() {
-    inPacket.next.then((event) => inMsg.writeList(Uint8List.view(event.data)));
+  Future<bool> next(Duration timeout) async {
+    final nextCompleter = Completer<bool>();
+    await inPacket.next.timeout(timeout, onTimeout: () {
+      nextCompleter.complete(false);
+      return;
+    }).then((message) {
+      inMsg.writeList(Uint8List.view(message.data));
+      nextCompleter.complete();
+    }).catchError((e) {
+      final error =
+          'WebsocketConnectionHandler::read - error occured ${e.toString()}';
+      print(error);
+      nextCompleter.completeError(error);
+    });
+
+    return nextCompleter.future;
   }
 
   /// read implements stream reader.
@@ -134,22 +153,15 @@ class WebsocketConnectionHandler {
 
   void _startListening() {
     print('startlistening');
-    try {
-      this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
-      _serverConn.onClose.listen((e) {
-        print(
-            'WebsocketConnectionHandler::newConnection - onClose ${e.reason}');
-        close();
-      });
-      _serverConn.onError.listen((e) {
-        print(
-            'WebsocketConnectionHandler::newConnection - onError ${e.toString()}');
-        close();
-      });
-    } on Exception catch (e) {
-      print('WebsocketConnectionHandler::newConnection - exception occured $e');
-      throw NoConnectionException(
-          'WebsocketConnectionHandler::newConnection - exception occured $e');
-    }
+    this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
+    _serverConn.onClose.listen((e) {
+      print('WebsocketConnectionHandler::newConnection - onClose ${e.reason}');
+      close();
+    });
+    _serverConn.onError.listen((e) {
+      print(
+          'WebsocketConnectionHandler::newConnection - onError ${e.toString()}');
+      close();
+    });
   }
 }
