@@ -27,21 +27,20 @@ class Store extends Adapter {
   }
 
   @override
-  Future<void> putMessage(int connectionId, UtpMessage message) {
+  Future<void> putMessage(int sessionId, UtpMessage message) {
     return _mutex
-        .protectRead(() => db.messageCommand.putMessage(connectionId, message));
+        .protectRead(() => db.messageCommand.putMessage(sessionId, message));
   }
 
   @override
-  Future<UtpMessage> getMessage(int connectionId, int key) {
-    return _mutex
-        .protectRead(() => db.messageQuery.getMessage(connectionId, key));
+  Future<UtpMessage> getMessage(int sessionId, int key) {
+    return _mutex.protectRead(() => db.messageQuery.getMessage(sessionId, key));
   }
 
   @override
-  Future<void> deleteMessage(int connectionId, int key) {
+  Future<void> deleteMessage(int sessionId, int key) {
     return _mutex
-        .protectRead(() => db.messageCommand.deleteMessage(connectionId, key));
+        .protectRead(() => db.messageCommand.deleteMessage(sessionId, key));
   }
 
   @override
@@ -50,14 +49,14 @@ class Store extends Adapter {
   }
 
 // handle which outgoing messages are stored
-  Future<void> persistOutbound(int connectionId, UtpMessage outMessage) {
+  Future<void> persistOutbound(int sessionId, UtpMessage outMessage) {
     switch (outMessage.type()) {
       case MessageType.PUBLISH:
       case MessageType.SUBSCRIBE:
       case MessageType.UNSUBSCRIBE:
         // Received a publish. store it in ibound
         // until ACKNOWLEDGE or COMPLETE is sent
-        putMessage(connectionId, outMessage);
+        putMessage(sessionId, outMessage);
         break;
     }
     if (outMessage.type() == MessageType.FLOWCONTROL) {
@@ -66,19 +65,19 @@ class Store extends Adapter {
         case FlowControl.RECEIPT:
           // Received a RECEIPT control message. store it in obound
           // until COMPLETE is received.
-          putMessage(connectionId, outMessage);
+          putMessage(sessionId, outMessage);
           break;
       }
     }
   }
 
 // handle which incoming messages are stored
-  Future<void> persistInbound(int connectionId, UtpMessage inMessage) {
+  Future<void> persistInbound(int sessionId, UtpMessage inMessage) {
     switch (inMessage.type()) {
       case MessageType.PUBLISH:
         // Received a publish. store it in ibound
         // until COMPLETE sent
-        putMessage(connectionId, inMessage);
+        putMessage(sessionId, inMessage);
         break;
     }
     if (inMessage.type() == MessageType.FLOWCONTROL) {
@@ -88,12 +87,12 @@ class Store extends Adapter {
         case FlowControl.COMPLETE:
           // Sending ACKNOWLEDGE, delete matching PUBLISH for EXPRESS delivery mode
           // or sending COMPLETE, delete matching RECEIVE for RELIABLE delivery mode from ibound
-          deleteMessage(connectionId, inMessage.getInfo().messageID);
+          deleteMessage(sessionId, inMessage.getInfo().messageID);
           break;
         case FlowControl.NOTIFY:
           // Sending RECEIPT. store in obound
           // until COMPLETE received
-          putMessage(connectionId, inMessage);
+          putMessage(sessionId, inMessage);
           break;
       }
     }

@@ -9,14 +9,14 @@ abstract class Adapter {
 
   // Put message is used to store a message.
   // it returns an error if some error was encountered during storage.
-  Future<void> putMessage(int connectionId, UtpMessage message);
+  Future<void> putMessage(int sessionId, UtpMessage message);
 
   // Get message performs a query and attempts to fetch message for the given key
-  Future<UtpMessage> getMessage(int connectionId, int key);
+  Future<UtpMessage> getMessage(int sessionId, int key);
 
   // Delete message is used to delete message.
   // it returns an error if some error was encountered during delete.
-  Future<void> deleteMessage(int connectionId, int key);
+  Future<void> deleteMessage(int sessionId, int key);
 
   // Keys performs a query and attempts to fetch all keys.
   Future<List<int>> keys();

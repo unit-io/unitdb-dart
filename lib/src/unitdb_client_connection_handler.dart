@@ -8,6 +8,8 @@ class ConnectionHandler {
 
   int get connectionId => _connID;
 
+  int get sessionId => _opts.username.isNotEmpty ? _opts.username.hashCode : 1;
+
   Map<int, MessageHandler> _callbacks;
 
   Connection _conn;
@@ -40,9 +42,10 @@ class ConnectionHandler {
 
   EventChannel<Message> get eventChannel => _eventChannel;
 
-  Future<bool> newConnection(Connection conn, Uri uri, Duration timeout) async {
+  Future<bool> newConnection(Connection conn, Uri uri, Duration timeout,
+      {String authority = ""}) async {
     this._conn = conn;
-    return connectionHandler.newConnection(uri, timeout);
+    return connectionHandler.newConnection(uri, timeout, authority: authority);
   }
 
   /// Connect takes a connected net.Conn and performs the initial handshake. Paramaters are:

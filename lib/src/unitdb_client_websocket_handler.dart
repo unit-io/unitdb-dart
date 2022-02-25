@@ -17,7 +17,8 @@ class WebsocketConnectionHandler {
   /// that didn't fully fit into the target slice. See Read.
   int readOffset;
 
-  Future<bool> newConnection(Uri uri, Duration timeout) {
+  Future<bool> newConnection(Uri uri, Duration timeout,
+      {String authority = ""}) {
     var r = ConnectResult();
     this.readOffset = 0;
     this.inMsg = ByteBuffer(typed.Uint8Buffer());

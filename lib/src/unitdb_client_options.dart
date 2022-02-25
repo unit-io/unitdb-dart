@@ -23,6 +23,7 @@ class Options {
   Options();
 
   List<Uri> servers;
+  String authority;
   PersistenceStore persistenceStore;
   String clientID;
   bool insecureFlag;
@@ -73,6 +74,7 @@ class Options {
   ///   ConnectTimeout: 30 (seconds)
   Options withDefaultOptions() {
     var o = Options();
+    o.authority = this.authority ?? '';
     o.persistenceStore = this.persistenceStore ?? PersistenceStore.None;
     o.insecureFlag = this.insecureFlag ?? false;
     o.username = this.username ?? "";
@@ -107,6 +109,12 @@ class Options {
     o.batchByteThreshold = 4 * 1024 * 1024;
     o.batchCountThreshold = 1000;
     return o;
+  }
+
+  /// WithAuthority returns an Option which makes client connection and set Authority
+  Options withAuthority(String authority) {
+    this.authority = authority;
+    return this;
   }
 
   /// WithClientID  returns an Option which makes client connection and set ClientID

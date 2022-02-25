@@ -130,7 +130,7 @@ class Connection with ConnectionHandler {
     });
 
     if (!_opts.cleanSession) {
-      await _resume(_connID);
+      await _resume();
     }
 
     if (_opts.onConnectionHandler != null) {
@@ -146,7 +146,8 @@ class Connection with ConnectionHandler {
     for (var uri in _opts.servers) {
       String error;
       await runZonedGuarded(() async {
-        await newConnection(this, uri, _opts.connectTimeout)
+        await newConnection(this, uri, _opts.connectTimeout,
+                authority: _opts.authority)
             .timeout(_opts.connectTimeout)
             .catchError((dynamic e) {
           error =
@@ -239,7 +240,7 @@ class Connection with ConnectionHandler {
       _conn._internalConnLost();
     });
 
-    _resume(_connID);
+    _resume();
 
     if (_opts.onConnectionHandler != null) {
       _opts.onConnectionHandler(this);
@@ -436,7 +437,11 @@ class Connection with ConnectionHandler {
       return;
     }
     for (final key in keys) {
-      final message = await localStore?.getMessage(connectionId, key);
+      final message =
+          await localStore?.getMessage(sessionId, key)?.catchError((dynamic e) {
+        final error = 'Connect: error on resume message Ids. $e}';
+        print(error);
+      });
       if (message == null) {
         continue;
       }
@@ -450,13 +455,17 @@ class Connection with ConnectionHandler {
   }
 
   // Load all stored messages and resend them to ensure DeliveryMode even after an application crash.
-  Future<void> _resume(int connectionId) async {
+  Future<void> _resume() async {
     final keys = await localStore?.keys();
     if (keys == null) {
       return;
     }
     for (final key in keys) {
-      final message = await localStore?.getMessage(connectionId, key);
+      final message =
+          await localStore?.getMessage(sessionId, key)?.catchError((dynamic e) {
+        final error = 'Connect: error on resume. $e}';
+        print(error);
+      });
       if (message == null) {
         continue;
       }
@@ -495,7 +504,7 @@ class Connection with ConnectionHandler {
           }
           break;
         default:
-          await localStore?.deleteMessage(connectionId, key);
+          await localStore?.deleteMessage(sessionId, key);
       }
     }
   }
@@ -524,11 +533,11 @@ class Connection with ConnectionHandler {
   }
 
   void storeInbound(UtpMessage inMessage) {
-    localStore?.persistInbound(connectionId, inMessage);
+    localStore?.persistInbound(sessionId, inMessage);
   }
 
   void storeOutbound(UtpMessage outMessage) {
-    localStore?.persistOutbound(connectionId, outMessage);
+    localStore?.persistOutbound(sessionId, outMessage);
   }
 
   /// Set connected flag; return true if not already connected.

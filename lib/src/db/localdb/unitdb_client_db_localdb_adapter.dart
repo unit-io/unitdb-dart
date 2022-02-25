@@ -20,7 +20,23 @@ class LocalDb extends _$LocalDb {
   String get userId => _userId;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
+        onUpgrade: (openingDetails, before, after) async {
+          if (before != after) {
+            final m = createMigrator();
+            for (final table in allTables) {
+              await m.deleteTable(table.actualTableName);
+              await m.createTable(table);
+            }
+          }
+        },
+      );
 
   /// Delete all tables
   Future<void> reset() => batch((batch) {

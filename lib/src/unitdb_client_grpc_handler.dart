@@ -23,7 +23,8 @@ class GrpcConnectionHandler {
   /// that didn't fully fit into the target slice. See Read.
   int readOffset;
 
-  Future<bool> newConnection(Uri uri, Duration timeout) async {
+  Future<bool> newConnection(Uri uri, Duration timeout,
+      {String authority = ""}) async {
     var r = ConnectResult();
     this.readOffset = 0;
 
@@ -32,7 +33,7 @@ class GrpcConnectionHandler {
         uri.host,
         uri.port,
         ChannelOptions(
-          credentials: ChannelCredentials.insecure(),
+          credentials: ChannelCredentials.insecure(authority: authority),
         ),
       ));
 

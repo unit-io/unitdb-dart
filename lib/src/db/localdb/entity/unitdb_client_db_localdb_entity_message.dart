@@ -7,7 +7,7 @@ class Messages extends Table {
   IntColumn get id => integer()();
 
   /// Connection Id
-  IntColumn get connectionId => integer()();
+  IntColumn get sessionId => integer()();
 
   /// The DateTime when the message was created.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -29,9 +29,9 @@ extension MessageEntityX on MessageEntity {
 /// Mapping functions for [Message]
 extension MessageX on UtpMessage {
   /// Maps a [Message] into [MessageEntity]
-  MessageEntity toEntity({int connectionId}) => MessageEntity(
+  MessageEntity toEntity({int sessionId}) => MessageEntity(
         id: getInfo().messageID,
-        connectionId: connectionId,
+        sessionId: sessionId,
         utpMessage: Uint8List.fromList(this.encode().readAll()),
       );
 }

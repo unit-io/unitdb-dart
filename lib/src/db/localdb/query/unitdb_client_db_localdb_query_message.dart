@@ -12,11 +12,11 @@ class MessageQuery extends DatabaseAccessor<LocalDb> with _$MessageQueryMixin {
   MessageQuery(LocalDb db) : super(db);
 
   /// Returns a single message by matching the [Messages.id] with [key]
-  Future<UtpMessage> getMessage(int connectionId, int key) async =>
+  Future<UtpMessage> getMessage(int sessionId, int key) async =>
       await (select(messages)
-            ..where((m) => m.connectionId.equals(connectionId))
+            ..where((m) => m.sessionId.equals(sessionId))
             ..where((m) => m.id.equals(key)))
-          .map((messageEntity) async => await messageEntity.toMessage())
+          .map((messageEntity) async => messageEntity.toMessage())
           .getSingleOrNull();
 
   /// Get the keys from the local db
