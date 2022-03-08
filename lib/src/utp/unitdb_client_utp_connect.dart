@@ -6,11 +6,13 @@ class Connect implements UtpMessage {
     this._clientID = opts.clientID;
     this._insecureFlag = opts.insecureFlag;
 
-    var username = opts.username;
-    var password = opts.password;
-    var user = server.userInfo?.split(':');
-    username = user[0];
-    password = user.length > 1 ? user[1] : password;
+    var user = server.userInfo?.split(':') ?? [];
+    print('connect::withOption - user $user userName ${opts.username}');
+    var username =
+        user.length == 0 || user[0].isEmpty ? opts.username : user[0];
+    var password = user.length > 1 && user[1].isNotEmpty
+        ? Uint16List.fromList(user[1].codeUnits)
+        : opts.password;
 
     if (username.isNotEmpty) {
       this._username = username;
@@ -20,6 +22,10 @@ class Connect implements UtpMessage {
       }
     }
 
+    this._sessionData = opts.sessionData;
+
+    print('connect::withOptions - username $username');
+
     // this._keepAlive = opts.keepAlive;
   }
 
@@ -28,6 +34,7 @@ class Connect implements UtpMessage {
   bool _insecureFlag;
   String _username;
   Uint8List _password;
+  String _sessionData;
   // int _keepAlive;
 
   /// type returns the Message type.
@@ -49,6 +56,7 @@ class Connect implements UtpMessage {
     if (_password != null) {
       conn.password = _password;
     }
+    conn.sessionData = _sessionData;
     final data = conn.writeToBuffer();
 
     final fh =

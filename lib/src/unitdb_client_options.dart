@@ -29,6 +29,7 @@ class Options {
   bool insecureFlag;
   String username;
   Uint8List password;
+  String sessionData;
   bool cleanSession;
   // tls.Config tLSConfig;
   int keepAlive;
@@ -79,6 +80,7 @@ class Options {
     o.insecureFlag = this.insecureFlag ?? false;
     o.username = this.username ?? "";
     o.password = this.password ?? Uint8List(0);
+    o.sessionData = this.sessionData ?? "";
     o.cleanSession = this.cleanSession ?? false;
     o.keepAlive = this.keepAlive ?? 60;
     o.pingTimeout = this.pingTimeout ?? Duration(seconds: 60);
@@ -137,10 +139,17 @@ class Options {
     return this;
   }
 
-  /// WithUserName returns an Option which makes client connection and pass UserName
+  /// WithUserNamePassword returns an Option which makes client connection and pass UserName
   Options withUserNamePassword(String userName, Uint8List password) {
+    print('withUserNamePassword - userName $userName');
     this.username = userName;
     this.password = password;
+    return this;
+  }
+
+  /// WithSessionData returns an Option which makes client connection and set SessionData
+  Options withSessionData(String sessionData) {
+    this.sessionData = sessionData;
     return this;
   }
 

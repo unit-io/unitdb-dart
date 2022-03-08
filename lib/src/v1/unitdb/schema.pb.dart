@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: unitdb.proto
+//  source: schema.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
@@ -9,12 +9,12 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'unitdb.pbenum.dart';
+import 'schema.pbenum.dart';
 
-export 'unitdb.pbenum.dart';
+export 'schema.pbenum.dart';
 
 class Empty extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Empty', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Empty', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..hasRequiredFields = false
   ;
 
@@ -43,7 +43,7 @@ class Empty extends $pb.GeneratedMessage {
 }
 
 class Packet extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Packet', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Packet', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.List<$core.int>>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'data', $pb.PbFieldType.OY)
     ..hasRequiredFields = false
   ;
@@ -90,7 +90,7 @@ class Packet extends $pb.GeneratedMessage {
 }
 
 class FixedHeader extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FixedHeader', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FixedHeader', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..e<MessageType>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageType', $pb.PbFieldType.OE, protoName: 'MessageType', defaultOrMaker: MessageType.RERSERVED, valueOf: MessageType.valueOf, enumValues: MessageType.values)
     ..e<FlowControl>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'FlowControl', $pb.PbFieldType.OE, protoName: 'FlowControl', defaultOrMaker: FlowControl.NONE, valueOf: FlowControl.valueOf, enumValues: FlowControl.values)
     ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageLength', $pb.PbFieldType.O3, protoName: 'MessageLength')
@@ -165,7 +165,7 @@ class FixedHeader extends $pb.GeneratedMessage {
 }
 
 class Connect extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Connect', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Connect', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Version', $pb.PbFieldType.O3, protoName: 'Version')
     ..aOB(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'InsecureFlag', protoName: 'InsecureFlag')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ClientID', protoName: 'ClientID')
@@ -174,9 +174,10 @@ class Connect extends $pb.GeneratedMessage {
     ..a<$core.int>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'SessKey', $pb.PbFieldType.O3, protoName: 'SessKey')
     ..aOS(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Username', protoName: 'Username')
     ..a<$core.List<$core.int>>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Password', $pb.PbFieldType.OY, protoName: 'Password')
-    ..a<$core.int>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchDuration', $pb.PbFieldType.O3, protoName: 'BatchDuration')
-    ..a<$core.int>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchByteThreshold', $pb.PbFieldType.O3, protoName: 'BatchByteThreshold')
-    ..a<$core.int>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchCountThreshold', $pb.PbFieldType.O3, protoName: 'BatchCountThreshold')
+    ..aOS(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'SessionData', protoName: 'SessionData')
+    ..a<$core.int>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchDuration', $pb.PbFieldType.O3, protoName: 'BatchDuration')
+    ..a<$core.int>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchByteThreshold', $pb.PbFieldType.O3, protoName: 'BatchByteThreshold')
+    ..a<$core.int>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'BatchCountThreshold', $pb.PbFieldType.O3, protoName: 'BatchCountThreshold')
     ..hasRequiredFields = false
   ;
 
@@ -190,6 +191,7 @@ class Connect extends $pb.GeneratedMessage {
     $core.int? sessKey,
     $core.String? username,
     $core.List<$core.int>? password,
+    $core.String? sessionData,
     $core.int? batchDuration,
     $core.int? batchByteThreshold,
     $core.int? batchCountThreshold,
@@ -218,6 +220,9 @@ class Connect extends $pb.GeneratedMessage {
     }
     if (password != null) {
       _result.password = password;
+    }
+    if (sessionData != null) {
+      _result.sessionData = sessionData;
     }
     if (batchDuration != null) {
       _result.batchDuration = batchDuration;
@@ -324,35 +329,44 @@ class Connect extends $pb.GeneratedMessage {
   void clearPassword() => clearField(8);
 
   @$pb.TagNumber(9)
-  $core.int get batchDuration => $_getIZ(8);
+  $core.String get sessionData => $_getSZ(8);
   @$pb.TagNumber(9)
-  set batchDuration($core.int v) { $_setSignedInt32(8, v); }
+  set sessionData($core.String v) { $_setString(8, v); }
   @$pb.TagNumber(9)
-  $core.bool hasBatchDuration() => $_has(8);
+  $core.bool hasSessionData() => $_has(8);
   @$pb.TagNumber(9)
-  void clearBatchDuration() => clearField(9);
+  void clearSessionData() => clearField(9);
 
   @$pb.TagNumber(10)
-  $core.int get batchByteThreshold => $_getIZ(9);
+  $core.int get batchDuration => $_getIZ(9);
   @$pb.TagNumber(10)
-  set batchByteThreshold($core.int v) { $_setSignedInt32(9, v); }
+  set batchDuration($core.int v) { $_setSignedInt32(9, v); }
   @$pb.TagNumber(10)
-  $core.bool hasBatchByteThreshold() => $_has(9);
+  $core.bool hasBatchDuration() => $_has(9);
   @$pb.TagNumber(10)
-  void clearBatchByteThreshold() => clearField(10);
+  void clearBatchDuration() => clearField(10);
 
   @$pb.TagNumber(11)
-  $core.int get batchCountThreshold => $_getIZ(10);
+  $core.int get batchByteThreshold => $_getIZ(10);
   @$pb.TagNumber(11)
-  set batchCountThreshold($core.int v) { $_setSignedInt32(10, v); }
+  set batchByteThreshold($core.int v) { $_setSignedInt32(10, v); }
   @$pb.TagNumber(11)
-  $core.bool hasBatchCountThreshold() => $_has(10);
+  $core.bool hasBatchByteThreshold() => $_has(10);
   @$pb.TagNumber(11)
-  void clearBatchCountThreshold() => clearField(11);
+  void clearBatchByteThreshold() => clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.int get batchCountThreshold => $_getIZ(11);
+  @$pb.TagNumber(12)
+  set batchCountThreshold($core.int v) { $_setSignedInt32(11, v); }
+  @$pb.TagNumber(12)
+  $core.bool hasBatchCountThreshold() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearBatchCountThreshold() => clearField(12);
 }
 
 class ConnectAcknowledge extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ConnectAcknowledge', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ConnectAcknowledge', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ReturnCode', $pb.PbFieldType.O3, protoName: 'ReturnCode')
     ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Epoch', $pb.PbFieldType.O3, protoName: 'Epoch')
     ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ConnID', $pb.PbFieldType.O3, protoName: 'ConnID')
@@ -427,7 +441,7 @@ class ConnectAcknowledge extends $pb.GeneratedMessage {
 }
 
 class PingRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PingRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PingRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..hasRequiredFields = false
   ;
 
@@ -456,7 +470,7 @@ class PingRequest extends $pb.GeneratedMessage {
 }
 
 class Disconnect extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Disconnect', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Disconnect', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
     ..hasRequiredFields = false
   ;
@@ -503,10 +517,11 @@ class Disconnect extends $pb.GeneratedMessage {
 }
 
 class PublishMessage extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PublishMessage', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PublishMessage', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Topic', protoName: 'Topic')
     ..a<$core.List<$core.int>>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Payload', $pb.PbFieldType.OY, protoName: 'Payload')
-    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Ttl', protoName: 'Ttl')
+    ..m<$core.String, $core.String>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Tags', protoName: 'Tags', entryClassName: 'PublishMessage.TagsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OS, packageName: const $pb.PackageName('unitdb'))
+    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Ttl', protoName: 'Ttl')
     ..hasRequiredFields = false
   ;
 
@@ -514,6 +529,7 @@ class PublishMessage extends $pb.GeneratedMessage {
   factory PublishMessage({
     $core.String? topic,
     $core.List<$core.int>? payload,
+    $core.Map<$core.String, $core.String>? tags,
     $core.String? ttl,
   }) {
     final _result = create();
@@ -522,6 +538,9 @@ class PublishMessage extends $pb.GeneratedMessage {
     }
     if (payload != null) {
       _result.payload = payload;
+    }
+    if (tags != null) {
+      _result.tags.addAll(tags);
     }
     if (ttl != null) {
       _result.ttl = ttl;
@@ -568,17 +587,20 @@ class PublishMessage extends $pb.GeneratedMessage {
   void clearPayload() => clearField(2);
 
   @$pb.TagNumber(3)
-  $core.String get ttl => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set ttl($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasTtl() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearTtl() => clearField(3);
+  $core.Map<$core.String, $core.String> get tags => $_getMap(2);
+
+  @$pb.TagNumber(4)
+  $core.String get ttl => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set ttl($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasTtl() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTtl() => clearField(4);
 }
 
 class Publish extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Publish', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Publish', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
     ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'DeliveryMode', $pb.PbFieldType.O3, protoName: 'DeliveryMode')
     ..pc<PublishMessage>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Messages', $pb.PbFieldType.PM, protoName: 'Messages', subBuilder: PublishMessage.create)
@@ -647,9 +669,9 @@ class Publish extends $pb.GeneratedMessage {
 }
 
 class RelayRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'RelayRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'RelayRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Topic', protoName: 'Topic')
-    ..m<$core.String, $core.String>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Tags', protoName: 'Tags', entryClassName: 'RelayRequest.TagsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OS, packageName: const $pb.PackageName('unitdb.schema'))
+    ..m<$core.String, $core.String>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Tags', protoName: 'Tags', entryClassName: 'RelayRequest.TagsEntry', keyFieldType: $pb.PbFieldType.OS, valueFieldType: $pb.PbFieldType.OS, packageName: const $pb.PackageName('unitdb'))
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Last', protoName: 'Last')
     ..hasRequiredFields = false
   ;
@@ -716,9 +738,9 @@ class RelayRequest extends $pb.GeneratedMessage {
 }
 
 class Relay extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Relay', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Relay', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
-    ..pc<RelayRequest>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'relayRequests', $pb.PbFieldType.PM, protoName: 'relayRequests', subBuilder: RelayRequest.create)
+    ..pc<RelayRequest>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'RelayRequests', $pb.PbFieldType.PM, protoName: 'RelayRequests', subBuilder: RelayRequest.create)
     ..hasRequiredFields = false
   ;
 
@@ -771,11 +793,10 @@ class Relay extends $pb.GeneratedMessage {
 }
 
 class Subscription extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Subscription', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Subscription', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'DeliveryMode', $pb.PbFieldType.O3, protoName: 'DeliveryMode')
     ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Delay', $pb.PbFieldType.O3, protoName: 'Delay')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Topic', protoName: 'Topic')
-    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Last', protoName: 'Last')
     ..hasRequiredFields = false
   ;
 
@@ -784,7 +805,6 @@ class Subscription extends $pb.GeneratedMessage {
     $core.int? deliveryMode,
     $core.int? delay,
     $core.String? topic,
-    $core.String? last,
   }) {
     final _result = create();
     if (deliveryMode != null) {
@@ -795,9 +815,6 @@ class Subscription extends $pb.GeneratedMessage {
     }
     if (topic != null) {
       _result.topic = topic;
-    }
-    if (last != null) {
-      _result.last = last;
     }
     return _result;
   }
@@ -848,19 +865,10 @@ class Subscription extends $pb.GeneratedMessage {
   $core.bool hasTopic() => $_has(2);
   @$pb.TagNumber(3)
   void clearTopic() => clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.String get last => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set last($core.String v) { $_setString(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasLast() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearLast() => clearField(4);
 }
 
 class Subscribe extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Subscribe', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Subscribe', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
     ..pc<Subscription>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Subscriptions', $pb.PbFieldType.PM, protoName: 'Subscriptions', subBuilder: Subscription.create)
     ..hasRequiredFields = false
@@ -915,7 +923,7 @@ class Subscribe extends $pb.GeneratedMessage {
 }
 
 class Unsubscribe extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Unsubscribe', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Unsubscribe', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
     ..pc<Subscription>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Subscriptions', $pb.PbFieldType.PM, protoName: 'Subscriptions', subBuilder: Subscription.create)
     ..hasRequiredFields = false
@@ -970,7 +978,7 @@ class Unsubscribe extends $pb.GeneratedMessage {
 }
 
 class ControlMessage extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ControlMessage', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb.schema'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ControlMessage', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'unitdb'), createEmptyInstance: create)
     ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'MessageID', $pb.PbFieldType.O3, protoName: 'MessageID')
     ..a<$core.List<$core.int>>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'Message', $pb.PbFieldType.OY, protoName: 'Message')
     ..hasRequiredFields = false

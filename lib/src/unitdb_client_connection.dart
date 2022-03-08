@@ -46,7 +46,13 @@ class Connection with ConnectionHandler {
 
   /// Connect will create a connection to the server
   /// The context will be used in the grpc stream connection.
-  Future<Result> connect() async {
+  Future<Result> connect({String userName, String userToken}) async {
+    _opts.withUserNamePassword(
+        userName ?? _opts.username,
+        userToken == null
+            ? _opts.password
+            : Uint8List.fromList(userToken.codeUnits));
+
     var r = ConnectResult(); // Connect to the server
     var sleep = Duration(seconds: 1);
     if (_opts.servers.isEmpty) {

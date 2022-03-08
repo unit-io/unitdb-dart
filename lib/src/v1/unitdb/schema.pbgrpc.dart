@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: unitdb.proto
+//  source: schema.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
@@ -10,12 +10,12 @@ import 'dart:async' as $async;
 import 'dart:core' as $core;
 
 import 'package:grpc/service_api.dart' as $grpc;
-import 'unitdb.pb.dart' as $0;
-export 'unitdb.pb.dart';
+import 'schema.pb.dart' as $0;
+export 'schema.pb.dart';
 
 class UnitdbClient extends $grpc.Client {
   static final _$stream = $grpc.ClientMethod<$0.Packet, $0.Packet>(
-      '/unitdb.schema.Unitdb/Stream',
+      '/unitdb.Unitdb/Stream',
       ($0.Packet value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Packet.fromBuffer(value));
 
@@ -31,7 +31,7 @@ class UnitdbClient extends $grpc.Client {
 }
 
 abstract class UnitdbServiceBase extends $grpc.Service {
-  $core.String get $name => 'unitdb.schema.Unitdb';
+  $core.String get $name => 'unitdb.Unitdb';
 
   UnitdbServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.Packet, $0.Packet>(
