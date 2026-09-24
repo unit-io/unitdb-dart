@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: schema.proto
 //
-// @dart = 2.12
+// @dart = 2.7
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
 
 import 'dart:core' as $core;
@@ -39,7 +39,7 @@ class Empty extends $pb.GeneratedMessage {
   static $pb.PbList<Empty> createRepeated() => $pb.PbList<Empty>();
   @$core.pragma('dart2js:noInline')
   static Empty getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Empty>(create);
-  static Empty? _defaultInstance;
+  static Empty _defaultInstance;
 }
 
 class Packet extends $pb.GeneratedMessage {
@@ -50,7 +50,7 @@ class Packet extends $pb.GeneratedMessage {
 
   Packet._() : super();
   factory Packet({
-    $core.List<$core.int>? data,
+    $core.List<$core.int> data,
   }) {
     final _result = create();
     if (data != null) {
@@ -77,7 +77,7 @@ class Packet extends $pb.GeneratedMessage {
   static $pb.PbList<Packet> createRepeated() => $pb.PbList<Packet>();
   @$core.pragma('dart2js:noInline')
   static Packet getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Packet>(create);
-  static Packet? _defaultInstance;
+  static Packet _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.List<$core.int> get data => $_getN(0);
@@ -99,9 +99,9 @@ class FixedHeader extends $pb.GeneratedMessage {
 
   FixedHeader._() : super();
   factory FixedHeader({
-    MessageType? messageType,
-    FlowControl? flowControl,
-    $core.int? messageLength,
+    MessageType messageType,
+    FlowControl flowControl,
+    $core.int messageLength,
   }) {
     final _result = create();
     if (messageType != null) {
@@ -134,7 +134,7 @@ class FixedHeader extends $pb.GeneratedMessage {
   static $pb.PbList<FixedHeader> createRepeated() => $pb.PbList<FixedHeader>();
   @$core.pragma('dart2js:noInline')
   static FixedHeader getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FixedHeader>(create);
-  static FixedHeader? _defaultInstance;
+  static FixedHeader _defaultInstance;
 
   @$pb.TagNumber(1)
   MessageType get messageType => $_getN(0);
@@ -182,17 +182,17 @@ class Connect extends $pb.GeneratedMessage {
 
   Connect._() : super();
   factory Connect({
-    $core.int? version,
-    $core.bool? insecureFlag,
-    $core.String? clientID,
-    $core.int? keepAlive,
-    $core.bool? cleanSessFlag,
-    $core.int? sessKey,
-    $core.String? username,
-    $core.List<$core.int>? password,
-    $core.int? batchDuration,
-    $core.int? batchByteThreshold,
-    $core.int? batchCountThreshold,
+    $core.int version,
+    $core.bool insecureFlag,
+    $core.String clientID,
+    $core.int keepAlive,
+    $core.bool cleanSessFlag,
+    $core.int sessKey,
+    $core.String username,
+    $core.List<$core.int> password,
+    $core.int batchDuration,
+    $core.int batchByteThreshold,
+    $core.int batchCountThreshold,
   }) {
     final _result = create();
     if (version != null) {
@@ -249,7 +249,7 @@ class Connect extends $pb.GeneratedMessage {
   static $pb.PbList<Connect> createRepeated() => $pb.PbList<Connect>();
   @$core.pragma('dart2js:noInline')
   static Connect getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Connect>(create);
-  static Connect? _defaultInstance;
+  static Connect _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get version => $_getIZ(0);
@@ -361,9 +361,9 @@ class ConnectAcknowledge extends $pb.GeneratedMessage {
 
   ConnectAcknowledge._() : super();
   factory ConnectAcknowledge({
-    $core.int? returnCode,
-    $core.int? epoch,
-    $core.int? connID,
+    $core.int returnCode,
+    $core.int epoch,
+    $core.int connID,
   }) {
     final _result = create();
     if (returnCode != null) {
@@ -396,7 +396,7 @@ class ConnectAcknowledge extends $pb.GeneratedMessage {
   static $pb.PbList<ConnectAcknowledge> createRepeated() => $pb.PbList<ConnectAcknowledge>();
   @$core.pragma('dart2js:noInline')
   static ConnectAcknowledge getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ConnectAcknowledge>(create);
-  static ConnectAcknowledge? _defaultInstance;
+  static ConnectAcknowledge _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get returnCode => $_getIZ(0);
@@ -452,7 +452,7 @@ class PingRequest extends $pb.GeneratedMessage {
   static $pb.PbList<PingRequest> createRepeated() => $pb.PbList<PingRequest>();
   @$core.pragma('dart2js:noInline')
   static PingRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PingRequest>(create);
-  static PingRequest? _defaultInstance;
+  static PingRequest _defaultInstance;
 }
 
 class Disconnect extends $pb.GeneratedMessage {
@@ -463,7 +463,7 @@ class Disconnect extends $pb.GeneratedMessage {
 
   Disconnect._() : super();
   factory Disconnect({
-    $core.int? messageID,
+    $core.int messageID,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -490,7 +490,7 @@ class Disconnect extends $pb.GeneratedMessage {
   static $pb.PbList<Disconnect> createRepeated() => $pb.PbList<Disconnect>();
   @$core.pragma('dart2js:noInline')
   static Disconnect getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Disconnect>(create);
-  static Disconnect? _defaultInstance;
+  static Disconnect _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
@@ -512,9 +512,9 @@ class PublishMessage extends $pb.GeneratedMessage {
 
   PublishMessage._() : super();
   factory PublishMessage({
-    $core.String? topic,
-    $core.List<$core.int>? payload,
-    $core.String? ttl,
+    $core.String topic,
+    $core.List<$core.int> payload,
+    $core.String ttl,
   }) {
     final _result = create();
     if (topic != null) {
@@ -547,7 +547,7 @@ class PublishMessage extends $pb.GeneratedMessage {
   static $pb.PbList<PublishMessage> createRepeated() => $pb.PbList<PublishMessage>();
   @$core.pragma('dart2js:noInline')
   static PublishMessage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PublishMessage>(create);
-  static PublishMessage? _defaultInstance;
+  static PublishMessage _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get topic => $_getSZ(0);
@@ -587,9 +587,9 @@ class Publish extends $pb.GeneratedMessage {
 
   Publish._() : super();
   factory Publish({
-    $core.int? messageID,
-    $core.int? deliveryMode,
-    $core.Iterable<PublishMessage>? messages,
+    $core.int messageID,
+    $core.int deliveryMode,
+    $core.Iterable<PublishMessage> messages,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -622,7 +622,7 @@ class Publish extends $pb.GeneratedMessage {
   static $pb.PbList<Publish> createRepeated() => $pb.PbList<Publish>();
   @$core.pragma('dart2js:noInline')
   static Publish getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Publish>(create);
-  static Publish? _defaultInstance;
+  static Publish _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
@@ -655,8 +655,8 @@ class RelayRequest extends $pb.GeneratedMessage {
 
   RelayRequest._() : super();
   factory RelayRequest({
-    $core.String? topic,
-    $core.String? last,
+    $core.String topic,
+    $core.String last,
   }) {
     final _result = create();
     if (topic != null) {
@@ -686,7 +686,7 @@ class RelayRequest extends $pb.GeneratedMessage {
   static $pb.PbList<RelayRequest> createRepeated() => $pb.PbList<RelayRequest>();
   @$core.pragma('dart2js:noInline')
   static RelayRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RelayRequest>(create);
-  static RelayRequest? _defaultInstance;
+  static RelayRequest _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get topic => $_getSZ(0);
@@ -716,8 +716,8 @@ class Relay extends $pb.GeneratedMessage {
 
   Relay._() : super();
   factory Relay({
-    $core.int? messageID,
-    $core.Iterable<RelayRequest>? relayRequests,
+    $core.int messageID,
+    $core.Iterable<RelayRequest> relayRequests,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -747,7 +747,7 @@ class Relay extends $pb.GeneratedMessage {
   static $pb.PbList<Relay> createRepeated() => $pb.PbList<Relay>();
   @$core.pragma('dart2js:noInline')
   static Relay getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Relay>(create);
-  static Relay? _defaultInstance;
+  static Relay _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
@@ -772,9 +772,9 @@ class Subscription extends $pb.GeneratedMessage {
 
   Subscription._() : super();
   factory Subscription({
-    $core.int? deliveryMode,
-    $core.int? delay,
-    $core.String? topic,
+    $core.int deliveryMode,
+    $core.int delay,
+    $core.String topic,
   }) {
     final _result = create();
     if (deliveryMode != null) {
@@ -807,7 +807,7 @@ class Subscription extends $pb.GeneratedMessage {
   static $pb.PbList<Subscription> createRepeated() => $pb.PbList<Subscription>();
   @$core.pragma('dart2js:noInline')
   static Subscription getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Subscription>(create);
-  static Subscription? _defaultInstance;
+  static Subscription _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get deliveryMode => $_getIZ(0);
@@ -846,8 +846,8 @@ class Subscribe extends $pb.GeneratedMessage {
 
   Subscribe._() : super();
   factory Subscribe({
-    $core.int? messageID,
-    $core.Iterable<Subscription>? subscriptions,
+    $core.int messageID,
+    $core.Iterable<Subscription> subscriptions,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -877,7 +877,7 @@ class Subscribe extends $pb.GeneratedMessage {
   static $pb.PbList<Subscribe> createRepeated() => $pb.PbList<Subscribe>();
   @$core.pragma('dart2js:noInline')
   static Subscribe getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Subscribe>(create);
-  static Subscribe? _defaultInstance;
+  static Subscribe _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
@@ -901,8 +901,8 @@ class Unsubscribe extends $pb.GeneratedMessage {
 
   Unsubscribe._() : super();
   factory Unsubscribe({
-    $core.int? messageID,
-    $core.Iterable<Subscription>? subscriptions,
+    $core.int messageID,
+    $core.Iterable<Subscription> subscriptions,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -932,7 +932,7 @@ class Unsubscribe extends $pb.GeneratedMessage {
   static $pb.PbList<Unsubscribe> createRepeated() => $pb.PbList<Unsubscribe>();
   @$core.pragma('dart2js:noInline')
   static Unsubscribe getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Unsubscribe>(create);
-  static Unsubscribe? _defaultInstance;
+  static Unsubscribe _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
@@ -956,8 +956,8 @@ class ControlMessage extends $pb.GeneratedMessage {
 
   ControlMessage._() : super();
   factory ControlMessage({
-    $core.int? messageID,
-    $core.List<$core.int>? message,
+    $core.int messageID,
+    $core.List<$core.int> message,
   }) {
     final _result = create();
     if (messageID != null) {
@@ -987,7 +987,7 @@ class ControlMessage extends $pb.GeneratedMessage {
   static $pb.PbList<ControlMessage> createRepeated() => $pb.PbList<ControlMessage>();
   @$core.pragma('dart2js:noInline')
   static ControlMessage getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ControlMessage>(create);
-  static ControlMessage? _defaultInstance;
+  static ControlMessage _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get messageID => $_getIZ(0);
