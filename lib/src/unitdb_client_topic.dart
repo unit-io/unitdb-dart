@@ -33,11 +33,23 @@ abstract class Topic {
   List<String> topicParts;
 
   void parseTopic() {
-    var parts = topic.split(keySeparator);
-    if (parts.length > 1) {
-      topic = parts[1];
+    // Strip a "<key>/" prefix; the topic is everything after the first
+    // separator, which may itself contain '/'.
+    final keyEnd = topic.indexOf(keySeparator);
+    if (keyEnd >= 0) {
+      topic = topic.substring(keyEnd + 1);
     }
 
+    // A trailing multi-level wildcard is one part, not empty parts left by
+    // splitting "..." on the topic separator.
+    if (topic.endsWith(multiWildcardSymbol)) {
+      final base = topic.substring(0, topic.length - multiWildcardSymbol.length);
+      topicParts = [
+        if (base.isNotEmpty) ...base.split(topicSeparator),
+        multiWildcardSymbol
+      ];
+      return;
+    }
     topicParts = topic.split(topicSeparator);
   }
 

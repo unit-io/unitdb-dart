@@ -107,9 +107,12 @@ class TopicFilter extends Topic {
           publicationTopic.topicParts.length > topicParts.length) {
         return false;
       }
+      // Unless the rest of the lhs is a multi wildcard, which also matches
+      // the parent (finance... matches finance).
       if (i + 1 == publicationTopic.topicParts.length &&
           publicationTopic.topicParts.length < topicParts.length) {
-        return false;
+        return topicParts.length == i + 2 &&
+            topicParts[i + 1] == Topic.multiWildcardSymbol;
       }
       // If we're here the current part matches so check the next
     }

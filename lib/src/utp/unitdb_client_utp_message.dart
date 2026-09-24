@@ -136,12 +136,10 @@ class FixedHeader {
         digit |= 0x80;
       }
       encLength.add(digit);
-      if (length == 0) {
-        break;
-      }
-    } while (length == 0);
+    } while (length > 0);
     return encLength;
   }
+
 
   static Future<int> decodeLength(dynamic r) async {
     int rLength = 0;

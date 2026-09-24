@@ -21,8 +21,12 @@ abstract class ResultNotifier {
 class Result implements ResultNotifier {
   String _err;
   final completer = Completer<bool>();
+  /// flowComplete marks the call complete. Completing more than once, e.g.
+  /// setError followed by flowComplete during clean-up, is a no-op.
   void flowComplete() {
-    completer.complete(null);
+    if (!completer.isCompleted) {
+      completer.complete(null);
+    }
   }
 
   void setError(String err) {
@@ -34,16 +38,22 @@ class Result implements ResultNotifier {
     return _err;
   }
 
-  /// get returns if server call is complete with error result of call
-  /// get blocks until server call is complete or context is done or till duration specified
+  /// get waits until the server call completes or waitDuration passes. It
+  /// returns true if the call completed, false if it timed out, and throws the
+  /// error if the call failed.
   Future<bool> get(Duration waitDuration) async {
     if (_err != null && _err.isNotEmpty) {
       throw _err;
     }
-    if (!completer.isCompleted) {
-      await Future.delayed(waitDuration);
+    try {
+      await completer.future.timeout(waitDuration);
+    } on TimeoutException {
+      return false;
     }
-    return completer.future;
+    if (_err != null && _err.isNotEmpty) {
+      throw _err;
+    }
+    return true;
   }
 }
 

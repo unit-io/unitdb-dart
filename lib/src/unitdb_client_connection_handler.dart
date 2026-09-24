@@ -106,10 +106,20 @@ class ConnectionHandler {
           await UtpMessage.read(connectionHandler).catchError((dynamic e) {
         throw Exception('${e.toString()}');
       });
+      if (msg == null) {
+        // A packet type the client does not handle; skip it.
+        continue;
+      }
 
       /// Persist incoming
       _conn.storeInbound(msg);
       _handler(msg);
+    }
+    // The server ended the stream. Unless the client closed it, the
+    // connection is lost.
+    if (!_conn._isClosed()) {
+      connectionHandler?.close();
+      _conn._internalConnLost();
     }
   }
 
@@ -182,14 +192,16 @@ class ConnectionHandler {
       }
     }
     pub.stream.listen((p) {
+      final ack = _ack(this, p);
       for (var pubMsg in p.messages) {
-        var m = Message.messageFromPublish(
-            p.getInfo().messageID, pubMsg, _ack(this, p));
+        var m = Message.messageFromPublish(p.getInfo().messageID, pubMsg, ack);
         eventChannel.notify(m);
         if (msg.hasListener) {
           msg.sink.add(m);
         }
       }
+      // Acknowledge the delivery once it has been handed to the application.
+      ack();
     });
   }
 
@@ -242,8 +254,16 @@ class ConnectionHandler {
   /// ack acknowledges a packet
   Function() _ack(Connection c, Publish msg) {
     return () {
+      // The server expects an ACKNOWLEDGE for express deliveries and a RECEIPT
+      // for reliable and batch deliveries, which it then COMPLETEs.
       switch (DeliveryMode.values[msg.getInfo().deliveryMode]) {
         case DeliveryMode.express:
+          var ack = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
+              FlowControl.ACKNOWLEDGE);
+          send.sink.add(MessageAndResult(ack));
+          break;
+        case DeliveryMode.reliable:
+        case DeliveryMode.batch:
           var rec = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
               FlowControl.RECEIPT);
 
@@ -252,15 +272,7 @@ class ConnectionHandler {
 
           send.sink.add(MessageAndResult(rec));
           break;
-        case DeliveryMode.reliable:
-        case DeliveryMode.batch:
-          var ack = ControlMessage(msg.getInfo().messageID, MessageType.PUBLISH,
-              FlowControl.ACKNOWLEDGE);
-
-          /// persist outbound
-          _conn.storeOutbound(ack);
-
-          send.sink.add(MessageAndResult(ack));
+        default:
           break;
       }
     };

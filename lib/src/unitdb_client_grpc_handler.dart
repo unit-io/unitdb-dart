@@ -133,7 +133,7 @@ class GrpcConnectionHandler {
   Future<int> write(ByteBuffer p) async {
     var total = p.length;
     do {
-      if (outPacket.isClosed) {
+      if (outPacket == null || outPacket.isClosed) {
         return 0;
       }
       // Write our data into the request. Any error means we abort.

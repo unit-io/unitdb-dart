@@ -1,6 +1,7 @@
 library unitdb_client;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:meta/meta.dart';
 import 'package:async/async.dart';

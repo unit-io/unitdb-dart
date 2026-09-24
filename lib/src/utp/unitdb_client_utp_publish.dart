@@ -50,6 +50,7 @@ class Publish implements UtpMessage {
 
     final pub = pbx.Publish();
     pub.messageID = _messageID;
+    pub.deliveryMode = _deliveryMode.index;
     pub.messages.addAll(messages);
     final data = pub.writeToBuffer();
 
@@ -69,6 +70,7 @@ class Publish implements UtpMessage {
       messages.add(PublishMessage(message.topic, message.payload, message.ttl));
     }
 
-    return Publish(pub.messageID, messages);
+    return Publish(pub.messageID, messages,
+        DeliveryMode.values[pub.deliveryMode.clamp(0, DeliveryMode.values.length - 1)]);
   }
 }

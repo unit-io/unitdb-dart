@@ -22,6 +22,8 @@ enum PersistenceStore { None, Memory, Localdb }
 class Options {
   Options();
 
+  static const _defaultWriteTimeout = Duration(seconds: 60);
+
   List<Uri> servers;
   String authority;
   PersistenceStore persistenceStore;
@@ -90,8 +92,8 @@ class Options {
     o.maxConnectRetryDuration =
         this.maxConnectRetryDuration ?? Duration(seconds: 30);
     o.connectRetry = this.connectRetry ?? false;
-    o.writeTimeout = this.writeTimeout ??
-        Duration(seconds: 60); // 0 represents timeout disabled
+    o.writeTimeout =
+        this.writeTimeout ?? _defaultWriteTimeout; // 0 represents timeout disabled
     o.onConnectionHandler = this.onConnectionHandler;
     o.defaultMessageHandler = this.defaultMessageHandler;
     o.connectionLostHandler = this.connectionLostHandler;
@@ -108,8 +110,8 @@ class Options {
     o.batchDuration = this.batchDuration ?? Duration(milliseconds: 100);
     // publish request (containing a batch of messages) in bytes. Must be lower
     // than the gRPC limit of 4 MiB.
-    o.batchByteThreshold = 4 * 1024 * 1024;
-    o.batchCountThreshold = 1000;
+    o.batchByteThreshold = this.batchByteThreshold ?? 4 * 1024 * 1024;
+    o.batchCountThreshold = this.batchCountThreshold ?? 1000;
     return o;
   }
 
@@ -239,7 +241,7 @@ class Options {
 
   /// WithStoreLogReleaseDuration sets log release duration, it must be greater than WriteTimeout.
   Options withStoreLogReleaseDuration(Duration t) {
-    if (t > this.writeTimeout) {
+    if (t > (this.writeTimeout ?? _defaultWriteTimeout)) {
       this.storeLogReleaseDuration = t;
     }
     return this;

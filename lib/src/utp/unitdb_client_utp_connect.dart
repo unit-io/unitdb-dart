@@ -11,7 +11,7 @@ class Connect implements UtpMessage {
     var username =
         user.length == 0 || user[0].isEmpty ? opts.username : user[0];
     var password = user.length > 1 && user[1].isNotEmpty
-        ? Uint16List.fromList(user[1].codeUnits)
+        ? Uint8List.fromList(utf8.encode(user[1]))
         : opts.password;
 
     if (username.isNotEmpty) {
@@ -23,6 +23,7 @@ class Connect implements UtpMessage {
     }
 
     this._sessionData = opts.sessionData;
+    this._keepAlive = opts.keepAlive;
 
     print('connect::withOptions - username $username');
 
@@ -35,6 +36,7 @@ class Connect implements UtpMessage {
   String _username;
   Uint8List _password;
   String _sessionData;
+  int _keepAlive;
   // int _keepAlive;
 
   /// type returns the Message type.
@@ -57,6 +59,7 @@ class Connect implements UtpMessage {
       conn.password = _password;
     }
     conn.sessionData = _sessionData;
+    conn.keepAlive = _keepAlive ?? 0;
     final data = conn.writeToBuffer();
 
     final fh =

@@ -35,8 +35,10 @@ class Connection with ConnectionHandler {
     await Future.wait(_waitGroup);
 
     cancelTimer();
-    connectionHandler.close();
+    // Drain queued messages (including DISCONNECT) to the server before
+    // closing the connection they are written to.
     await send.close();
+    connectionHandler.close();
     await pub.close();
 
     /// disconnect local store
@@ -90,10 +92,11 @@ class Connection with ConnectionHandler {
               continue retry;
             }
           }
-          throw "failed to connect to messaging server, $rc";
+          throw NoConnectionException(
+              "failed to connect to messaging server, $rc");
         }
         break retry;
-      } on Exception catch (e) {
+      } catch (e) {
         _setClosed();
         if (connectionHandler != null) {
           connectionHandler.close();
@@ -143,13 +146,19 @@ class Connection with ConnectionHandler {
       _opts.onConnectionHandler(this);
     }
 
+    r.flowComplete();
     return r;
   }
 
+  /// _attemptConnection tries each server in turn. It returns Accepted, or the
+  /// last return code a server sent, or ErrRefusedServerUnavailable if no
+  /// server answered.
   Future<ConnectReturnCode> _attemptConnection() async {
     int returnCode;
+    var result = ConnectReturnCode.ErrRefusedServerUnavailable;
 
     for (var uri in _opts.servers) {
+      returnCode = null;
       String error;
       await runZonedGuarded(() async {
         await newConnection(this, uri, _opts.connectTimeout,
@@ -177,11 +186,16 @@ class Connection with ConnectionHandler {
       if (returnCode == ConnectReturnCode.Accepted.index) {
         return ConnectReturnCode.Accepted;
       }
+      if (returnCode != null &&
+          returnCode >= 0 &&
+          returnCode < ConnectReturnCode.values.length) {
+        result = ConnectReturnCode.values[returnCode];
+      }
       if (connectionHandler != null) {
         connectionHandler.close();
       }
     }
-    return ConnectReturnCode.ErrRefusedServerUnavailable;
+    return result;
   }
 
 // internal function used to reconnect the client when it loses its connection
@@ -309,7 +323,7 @@ class Connection with ConnectionHandler {
 
     List<PublishMessage> messages = [PublishMessage(topic, payload, ttl)];
     final messageID = _messageIds._nextID(r);
-    final pub = Publish(messageID, messages);
+    final pub = Publish(messageID, messages, deliveryMode);
 
     var publishWaitTimeout = _opts.writeTimeout;
     if (publishWaitTimeout.inMilliseconds == 0) {
