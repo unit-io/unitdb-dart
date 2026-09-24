@@ -15,7 +15,7 @@ export 'schema.pb.dart';
 
 class UnitdbClient extends $grpc.Client {
   static final _$stream = $grpc.ClientMethod<$0.Packet, $0.Packet>(
-      '/unitdb.Unitdb/Stream',
+      '/unitdb.schema.Unitdb/Stream',
       ($0.Packet value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Packet.fromBuffer(value));
 
@@ -31,7 +31,7 @@ class UnitdbClient extends $grpc.Client {
 }
 
 abstract class UnitdbServiceBase extends $grpc.Service {
-  $core.String get $name => 'unitdb.Unitdb';
+  $core.String get $name => 'unitdb.schema.Unitdb';
 
   UnitdbServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.Packet, $0.Packet>(

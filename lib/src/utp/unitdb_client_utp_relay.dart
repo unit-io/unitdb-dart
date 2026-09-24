@@ -1,7 +1,9 @@
 part of unitdb_client;
 
 class RelayRequest {
-  RelayRequest(String topic, String last, {Map<String, String> tags}) {
+  RelayRequest(String topic, String last,
+      {@Deprecated('the server protocol has no relay tags; they are not sent')
+          Map<String, String> tags}) {
     this._topic = topic;
     this._tags = tags;
     this._last = last;
@@ -11,6 +13,7 @@ class RelayRequest {
   String _last;
 
   String get topic => _topic;
+  @Deprecated('the server protocol has no relay tags; they are not sent')
   Map<String, String> get tags => _tags;
   String get last => _last;
 }
@@ -41,9 +44,6 @@ class Relay implements UtpMessage {
     for (var r in this._requests) {
       final req = pbx.RelayRequest();
       req.topic = r.topic;
-      r.tags?.forEach((key, value) {
-        req.tags[key] = value;
-      });
       req.last = r.last;
       requests.add(req);
     }
@@ -66,7 +66,7 @@ class Relay implements UtpMessage {
 
     List<RelayRequest> requests = [];
     for (var req in rel.relayRequests) {
-      requests.add(RelayRequest(req.topic, req.last, tags: req.tags));
+      requests.add(RelayRequest(req.topic, req.last));
     }
 
     return Relay(rel.messageID, requests);

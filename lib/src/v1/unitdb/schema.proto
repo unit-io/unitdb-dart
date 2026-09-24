@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package unitdb;
+package unitdb.schema;
 
-option go_package='github.com/unit-io/release/v01/unitdb-internal/v1/unitdb';
+option go_package='.;schema';
 
 // Unitdb server interface
 service Unitdb {
@@ -52,10 +52,9 @@ message Connect {
 	int32 SessKey=6;
 	string Username=7;
 	bytes Password=8;
-	string SessionData=9;
-	int32 BatchDuration=10;
-	int32 BatchByteThreshold=11;
-	int32 BatchCountThreshold=12;
+	int32 BatchDuration=9;
+	int32 BatchByteThreshold=10;
+	int32 BatchCountThreshold=11;
 }
 
 // ConnectAcknowledge represents a CONNECT Acknowledge Message type.
@@ -84,8 +83,7 @@ message Disconnect {
 message PublishMessage {
 	string Topic=1;
 	bytes Payload=2;
-	map<string, string> Tags = 3;
-	string Ttl=4;
+	string Ttl=3;
 }
 
 // Publish represents a PUBREQ Message type. It supports following delivery mode.
@@ -101,14 +99,13 @@ message Publish {
 // RelayRequest is pairing the Topic and Last parameter together
 message RelayRequest {
 	string Topic=1;
-	map<string, string> Tags = 2;
-	string Last=3;
+	string Last=2;
 }
 
-// Relay tells the server which topics and last durations the client would like get data. The Delivery Mode for relay is EXPRESS.
+// Relay tells the server which topics and last durations the client would like get data persisted on Servr. The Delivery Mode for relay is EXPRESS.
 message Relay {
 	int32 MessageID=1;
-	repeated RelayRequest RelayRequests=2;
+	repeated RelayRequest relayRequests=2;
 }
 
 // Subscription is pairing the Delivery Mode and Topic together

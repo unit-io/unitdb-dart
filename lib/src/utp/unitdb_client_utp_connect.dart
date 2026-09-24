@@ -58,7 +58,7 @@ class Connect implements UtpMessage {
     if (_password != null) {
       conn.password = _password;
     }
-    conn.sessionData = _sessionData;
+    // The server protocol has no session data, so it is not sent.
     conn.keepAlive = _keepAlive ?? 0;
     final data = conn.writeToBuffer();
 

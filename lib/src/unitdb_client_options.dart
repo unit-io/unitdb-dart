@@ -150,6 +150,7 @@ class Options {
   }
 
   /// WithSessionData returns an Option which makes client connection and set SessionData
+  @Deprecated('the server protocol has no session data; it is not sent')
   Options withSessionData(String sessionData) {
     this.sessionData = sessionData;
     return this;
