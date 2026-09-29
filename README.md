@@ -32,7 +32,7 @@ final client = Client(
       ..withConnectionHandler((_) => print('connected')));
 ```
 
-Once connected, it asks the server to resume its session, subscribes again to its topics, and sends again what the server had not acknowledged. Calls made while it reconnects wait for the connection, up to the write timeout. A message in flight when the connection drops can be delivered twice. With `withAutoReconnect(false)`, a client closes when its connection is lost, and its calls fail from then on.
+Once connected, it resumes its session, so reliable messages in flight are delivered, subscribes again to its topics, and sends again what the server had not acknowledged. Calls made while it reconnects wait for the connection, up to the write timeout. A message in flight when the connection drops can be delivered twice. With `withAutoReconnect(false)`, a client closes when its connection is lost, and its calls fail from then on.
 
 ## Contributing
 If you'd like to contribute, please fork the repository and use a feature branch. Pull requests are welcome.

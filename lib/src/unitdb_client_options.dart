@@ -35,6 +35,7 @@ class Options {
   bool cleanSession;
   // tls.Config tLSConfig;
   int keepAlive;
+  int sessionKey;
   Duration pingTimeout;
   Duration connectTimeout;
   Duration maxReconnectDuration;
@@ -92,6 +93,7 @@ class Options {
     o.maxConnectRetryDuration =
         this.maxConnectRetryDuration ?? Duration(seconds: 30);
     o.connectRetry = this.connectRetry ?? false;
+    o.sessionKey = this.sessionKey ?? 0;
     o.writeTimeout =
         this.writeTimeout ?? _defaultWriteTimeout; // 0 represents timeout disabled
     o.onConnectionHandler = this.onConnectionHandler;
@@ -153,6 +155,15 @@ class Options {
   @Deprecated('the server protocol has no session data; it is not sent')
   Options withSessionData(String sessionData) {
     this.sessionData = sessionData;
+    return this;
+  }
+
+  /// WithSessionKey sets the key of the client's session, as unitdb-go's
+  /// WithSessionKey. The server keys a session by the client ID and this
+  /// key: clients sharing a client ID keep separate sessions with different
+  /// keys. 0, the default, keys the session by the client ID alone.
+  Options withSessionKey(int sessionKey) {
+    this.sessionKey = sessionKey;
     return this;
   }
 

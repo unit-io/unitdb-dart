@@ -12,6 +12,7 @@ import 'package:test/test.dart';
 import 'package:unitdb_client/unitdb_client.dart';
 
 import 'support/go_server.dart';
+import 'support/proxy.dart';
 
 /// Events records a client's connection handler calls.
 class Events {
@@ -62,12 +63,13 @@ void main() {
   /// publishOnce publishes payload on topic from a client of its own, with
   /// clientID: a client ID is a contract's, and topics are the contract's.
   Future<void> publishOnce(String clientID, String topic, String payload,
-      {String ttl = ''}) async {
+      {String ttl = '', DeliveryMode deliveryMode = DeliveryMode.express}) async {
     final pub = Client(target(), clientID,
         Options().withInsecure().withAutoReconnect(false));
     final r = await pub.connect().timeout(const Duration(seconds: 10));
     expect(r.error(), isNull);
-    final p = pub.publish(topic, Uint8List.fromList(utf8.encode(payload)), ttl: ttl);
+    final p = pub.publish(topic, Uint8List.fromList(utf8.encode(payload)),
+        ttl: ttl, deliveryMode: deliveryMode);
     expect(await p.get(const Duration(seconds: 5)), isTrue, reason: 'publish: ${p.error()}');
     await pub.disconnect();
   }
@@ -93,6 +95,47 @@ void main() {
 
     await publishOnce(cid, 'dart.rc.restart', 'back');
     await eventually('the message after the restart', () => got.contains('back'));
+    await client.disconnect();
+  }, skip: skip);
+
+  test('a reconnect resumes the session: messages in flight are delivered', () async {
+    // The client reaches the server through a proxy, which can stall and cut
+    // its connection while the server stays up.
+    final proxy = Proxy(server.grpcPort);
+    await proxy.start();
+    addTearDown(proxy.stop);
+
+    final e = Events();
+    final cid = await newClientID(server.grpcPort);
+    // A session of its own: the publisher shares the client ID.
+    final client = Client('127.0.0.1:${proxy.port}', cid, reconnecting(e).withSessionKey(0x5e55));
+    expect((await client.connect().timeout(const Duration(seconds: 10))).error(), isNull);
+    final got = <String>[];
+    client.messageStream.listen((ms) => got.addAll(ms.map((m) => utf8.decode(m.payload))));
+    final s = client.subscribe('dart.rs.reliable', deliveryMode: DeliveryMode.reliable);
+    expect(await s.get(const Duration(seconds: 5)), isTrue, reason: 'subscribe: ${s.error()}');
+
+    // Reliable messages published while the server's notifications do not
+    // reach the client: the server keeps them in the session's log until the
+    // client receives them. It keeps no express message.
+    proxy.hold = true;
+    for (final m in ['r0', 'r1', 'r2']) {
+      await publishOnce(cid, 'dart.rs.reliable', m, deliveryMode: DeliveryMode.reliable);
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    expect(got, isEmpty, reason: 'the proxy let notifications through');
+
+    // The connection drops, and the client reconnects a while later. Only a
+    // resumed session has the messages: a new one, or a new subscription,
+    // does not.
+    await proxy.cut();
+    await eventually('the connection lost handler', () => e.lost > 0);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    await proxy.start();
+    await eventually('the reconnection', () => e.connected >= 2);
+    await eventually('the messages of the resumed session',
+        () => ['r0', 'r1', 'r2'].every(got.contains),
+        timeout: const Duration(seconds: 20));
     await client.disconnect();
   }, skip: skip);
 

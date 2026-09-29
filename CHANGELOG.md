@@ -7,7 +7,7 @@ encryption key of its own.
 
 - Reconnecting works. With auto reconnect (the default), a client whose
   connection is lost now:
-  - connects without a clean session, so the server can resume it,
+  - resumes its session, so reliable messages in flight are delivered,
   - subscribes again to its topics, and
   - sends again what the server had not acknowledged.
 
@@ -23,6 +23,12 @@ encryption key of its own.
   the process, so one client losing its connection failed the other
   clients' pending calls.
 
+### Added
+
+- `Options.withSessionKey`, as unitdb-go's `WithSessionKey`: the server keys
+  a session by the client ID and this key, so clients sharing a client ID
+  can keep separate sessions.
+
 ### Tests
 
 - The Go-server tests run against unitdb v0.4.0 and later. They use a key
@@ -31,6 +37,9 @@ encryption key of its own.
   server restart, a publish made while reconnecting, `disconnect` while
   reconnecting, auto reconnect off, and the next server when the first is
   down.
+- A reconnect resumes the session: reliable messages whose notifications
+  the client lost with its connection are delivered after it reconnects.
+  With a clean session on reconnect, the test fails.
 
 ## 0.2.0
 
