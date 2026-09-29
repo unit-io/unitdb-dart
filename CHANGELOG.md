@@ -1,3 +1,37 @@
+## Unreleased
+
+Works with unitdb v0.4.0 and v0.5.0, which require the server to have an
+encryption key of its own.
+
+### Fixes
+
+- Reconnecting works. With auto reconnect (the default), a client whose
+  connection is lost now:
+  - connects without a clean session, so the server can resume it,
+  - subscribes again to its topics, and
+  - sends again what the server had not acknowledged.
+
+  Before, it reconnected but received nothing on its subscriptions.
+- A publish, subscribe, unsubscribe or relay made while the client
+  reconnects waits for the connection, up to the write timeout. Before, it
+  was sent into the lost connection and never completed.
+- `disconnect` while reconnecting stops the reconnect, and the client stays
+  closed.
+- Without auto reconnect, a client whose connection is lost closes: its
+  calls fail at once, instead of never completing.
+- Message identifiers are per client. They were shared by every client in
+  the process, so one client losing its connection failed the other
+  clients' pending calls.
+
+### Tests
+
+- The Go-server tests run against unitdb v0.4.0 and later. They use a key
+  of their own, and ask the server for client IDs.
+- Reconnection tests against the Go server, ported from unitdb-go: a
+  server restart, a publish made while reconnecting, `disconnect` while
+  reconnecting, auto reconnect off, and the next server when the first is
+  down.
+
 ## 0.2.0
 
 First tagged release. Earlier builds could not talk to the unitdb server, so

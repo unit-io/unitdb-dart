@@ -11,70 +11,7 @@ import 'dart:typed_data' hide ByteBuffer;
 import 'package:test/test.dart';
 import 'package:unitdb_client/unitdb_client.dart';
 
-const clientID = 'UCBFDONCNJLaKMCAIeJBaOVfbAXUZHNPLDKKLDKLHZHKYIZLCDPQ';
-const serverKey = '4BWm1vZletvrCDGWsF6mex8oBSd59m6I';
-
-Future<int> freePort() async {
-  final s = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-  final port = s.port;
-  await s.close();
-  return port;
-}
-
-class GoServer {
-  Process process;
-  int grpcPort;
-  Directory dir;
-  final logs = StringBuffer();
-
-  Future<void> start() async {
-    final src = Platform.environment['UNITDB_SERVER_DIR'] ??
-        '${Directory.current.parent.path}/unitdb/server';
-    dir = await Directory.systemTemp.createTemp('unitdb-dart-e2e');
-    final bin = '${dir.path}/unitdb-server';
-    final build = await Process.run('go', ['build', '-o', bin, '.'], workingDirectory: src);
-    if (build.exitCode != 0) {
-      throw StateError('go build failed in $src:\n${build.stderr}');
-    }
-    grpcPort = await freePort();
-    final tcpPort = await freePort();
-    await File('${dir.path}/e2e.conf').writeAsString(jsonEncode({
-      'listen': '127.0.0.1:$tcpPort',
-      'grpc_listen': '127.0.0.1:$grpcPort',
-      'logging_level': 'Error',
-      'encryption_config': {'key': serverKey, 'identifier': 'local', 'sealed': false},
-      'cluster_config': {'self': ''},
-      'store_config': {
-        'reset': false,
-        'adapters': {
-          'unitdb': {'database': 'unitdb', 'mem_size': 500000000}
-        }
-      },
-    }));
-    process = await Process.start(bin, ['-config', 'e2e.conf', '-db_path', '${dir.path}/db']);
-    process.stdout.transform(utf8.decoder).listen(logs.write);
-    process.stderr.transform(utf8.decoder).listen(logs.write);
-    final deadline = DateTime.now().add(const Duration(seconds: 15));
-    while (true) {
-      try {
-        final s = await Socket.connect(InternetAddress.loopbackIPv4, grpcPort);
-        s.destroy();
-        return;
-      } on SocketException {
-        if (DateTime.now().isAfter(deadline)) {
-          throw StateError('server did not start:\n$logs');
-        }
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-      }
-    }
-  }
-
-  Future<void> stop() async {
-    process?.kill(ProcessSignal.sigkill);
-    await process?.exitCode;
-    await dir?.delete(recursive: true);
-  }
-}
+import 'support/go_server.dart';
 
 void main() {
   final enabled = Platform.environment['UNITDB_E2E_GO'] == '1';
@@ -88,6 +25,7 @@ void main() {
   });
 
   test('connects, subscribes, publishes and receives through the Go server', () async {
+    final clientID = await newClientID(server.grpcPort);
     Client client() => Client('127.0.0.1:${server.grpcPort}', clientID,
         Options().withInsecure().withConnectTimeout(const Duration(seconds: 5)));
 

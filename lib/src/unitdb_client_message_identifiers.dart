@@ -1,11 +1,9 @@
 part of unitdb_client;
 
-/// Message identifier handling
+/// Message identifier handling, one per client: the server's answers name
+/// the client's own message identifiers.
 class _MessageIdentifiers {
-  /// Constructor
-  factory _MessageIdentifiers() => _singleton;
-  _MessageIdentifiers._internal();
-  static final _MessageIdentifiers _singleton = _MessageIdentifiers._internal();
+  _MessageIdentifiers();
 
   int _mid;
 

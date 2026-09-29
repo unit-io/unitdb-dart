@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # The Go-server tests build the unitdb server from source.
+      - uses: actions/checkout@v7
+        with:
+          repository: unit-io/unitdb
+          path: unitdb-server
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: unitdb-server/go.mod
+      # The package is not null safe yet: Dart 2.19 is the last SDK that runs
+      # it.
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 2.19.6
+      - run: dart pub get
+      - run: dart analyze --no-fatal-warnings lib test
+      - run: dart test
+        env:
+          UNITDB_E2E_GO: '1'
+          UNITDB_SERVER_DIR: ${{ github.workspace }}/unitdb-server/server

@@ -32,6 +32,21 @@ class ConnectionHandler {
   int _pingOutstanding;
   int _closed;
 
+  /// _down is set while the connection is lost and the client reconnects.
+  bool _down = false;
+
+  /// _inflight holds the requests the server has not answered, by message
+  /// identifier, to send them again after a reconnect.
+  final _inflight = <int, MessageAndResult>{};
+
+  /// _subscriptions holds the client's subscriptions, to subscribe again
+  /// after a reconnect.
+  final _subscriptions = <String, Subscription>{};
+
+  /// _pending holds the requests made while the client reconnects, until
+  /// it is connected or their write timeout passes.
+  final _pending = <MessageAndResult>[];
+
   final send = StreamController<MessageAndResult>();
 
   final pub = StreamController<Publish>();
@@ -142,8 +157,9 @@ class ConnectionHandler {
               case MessageType.RELAY:
                 var mId = ctrl.getInfo().messageID;
                 final r = _messageIds._getType(mId);
-                r.flowComplete();
+                r?.flowComplete();
                 _messageIds._freeID(mId);
+                _inflight.remove(mId);
                 break;
             }
             break;
@@ -155,8 +171,9 @@ class ConnectionHandler {
           case FlowControl.COMPLETE:
             var mId = msg.getInfo().messageID;
             final r = _messageIds._getType(mId);
-            r.flowComplete();
+            r?.flowComplete();
             _messageIds._freeID(mId);
+            _inflight.remove(mId);
             break;
         }
         break;
