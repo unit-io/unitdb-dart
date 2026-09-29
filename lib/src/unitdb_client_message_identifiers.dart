@@ -5,7 +5,7 @@ part of unitdb_client;
 class _MessageIdentifiers {
   _MessageIdentifiers();
 
-  int _mid;
+  int _mid = 0;
 
   /// Mid
   int get mid => _mid;
@@ -57,7 +57,7 @@ class _MessageIdentifiers {
   }
 
   /// Gets type for Mid
-  Result _getType(int id) {
+  Result? _getType(int id) {
     return _messageIds[id];
   }
 }

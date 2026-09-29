@@ -2,8 +2,8 @@
 //  Generated code. Do not modify.
 //  source: schema.proto
 //
-// @dart = 2.7
-// ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
+// @dart = 2.12
+// ignore_for_file: annotate_overrides,camel_case_types,constant_identifier_names,directives_ordering,library_prefixes,non_constant_identifier_names,prefer_final_fields,return_of_invalid_type,unnecessary_const,unnecessary_import,unnecessary_this,unused_import,unused_shown_name
 
 import 'dart:async' as $async;
 
@@ -20,12 +20,12 @@ class UnitdbClient extends $grpc.Client {
       ($core.List<$core.int> value) => $0.Packet.fromBuffer(value));
 
   UnitdbClient($grpc.ClientChannel channel,
-      {$grpc.CallOptions options,
-      $core.Iterable<$grpc.ClientInterceptor> interceptors})
+      {$grpc.CallOptions? options,
+      $core.Iterable<$grpc.ClientInterceptor>? interceptors})
       : super(channel, options: options, interceptors: interceptors);
 
   $grpc.ResponseStream<$0.Packet> stream($async.Stream<$0.Packet> request,
-      {$grpc.CallOptions options}) {
+      {$grpc.CallOptions? options}) {
     return $createStreamingCall(_$stream, request, options: options);
   }
 }

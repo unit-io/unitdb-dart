@@ -11,7 +11,7 @@ class Connection with ConnectionHandler {
     this._contract = MasterContract;
     this._messageIds = _MessageIdentifiers();
     this._messageIds._reset();
-    this._callbacks = Map<int, MessageHandler>();
+    this._callbacks = Map<int, MessageHandler?>();
 
     this._opts.addServer(target);
     this._opts.setClientID(clientID);
@@ -20,7 +20,7 @@ class Connection with ConnectionHandler {
   }
 
   /// The stream on which all subscribed topic messages are published to.
-  Stream<List<Message>> get messageStream => eventChannel?.changes;
+  Stream<List<Message>> get messageStream => eventChannel.changes;
 
   void cancelTimer() {
     _keepAliveTimer?.cancel();
@@ -38,7 +38,12 @@ class Connection with ConnectionHandler {
     // Drain queued messages (including DISCONNECT) to the server before
     // closing the connection they are written to.
     await send.close();
-    connectionHandler.close();
+    final handler = connectionHandler;
+    if (handler is GrpcConnectionHandler) {
+      await handler.closeGracefully(const Duration(seconds: 1));
+    } else {
+      handler.close();
+    }
     await pub.close();
 
     /// disconnect local store
@@ -48,32 +53,34 @@ class Connection with ConnectionHandler {
 
   /// Connect will create a connection to the server
   /// The context will be used in the grpc stream connection.
-  Future<Result> connect({String userName, String userToken}) async {
+  Future<Result> connect({String? userName, String? userToken}) async {
     _opts.withUserNamePassword(
-        userName ?? _opts.username,
+        userName ?? _opts._resolvedUsername,
         userToken == null
-            ? _opts.password
+            ? _opts._resolvedPassword
             : Uint8List.fromList(userToken.codeUnits));
 
     var r = ConnectResult(); // Connect to the server
     var sleep = Duration(seconds: 1);
-    if (_opts.servers.isEmpty) {
+    if (_opts._resolvedServers.isEmpty) {
       r.setError("no servers defined to connect to");
       // no servers defined to connect to.
       return r;
     }
-    if (_opts.connectRetry && !_isClosed()) {
+    if (_opts._resolvedConnectRetry && !_isClosed()) {
       r.returnCode = ConnectReturnCode.Accepted.index;
       r.flowComplete();
       return r;
     }
 
     if (_opts.persistenceStore == PersistenceStore.Localdb) {
-      localStore = Store();
-      await localStore.connect(_opts.username, reset: _opts.cleanSession);
+      final store = Store();
+      localStore = store;
+      await store.connect(_opts._resolvedUsername,
+          reset: _opts._resolvedCleanSession);
     }
 
-    if (_opts.connectRetry && !_opts.cleanSession) {
+    if (_opts._resolvedConnectRetry && !_opts._resolvedCleanSession) {
       _resumeMessageIds();
     }
 
@@ -83,9 +90,9 @@ class Connection with ConnectionHandler {
         var rc = await _attemptConnection();
         r.returnCode = rc.index;
         if (rc != ConnectReturnCode.Accepted) {
-          if (_opts.connectRetry) {
+          if (_opts._resolvedConnectRetry) {
             await Future.delayed(sleep);
-            if (sleep < _opts.maxConnectRetryDuration) {
+            if (sleep < _opts._resolvedMaxConnectRetryDuration) {
               sleep *= 2;
             }
             if (_isClosed()) {
@@ -111,7 +118,7 @@ class Connection with ConnectionHandler {
 
     _setConnected();
 
-    if (_opts.keepAlive != 0) {
+    if (_opts._resolvedKeepAlive != 0) {
       _pingOutstanding = 0;
       _updateLastAction();
       _updateLastTouched();
@@ -138,13 +145,11 @@ class Connection with ConnectionHandler {
       _conn._internalConnLost();
     });
 
-    if (!_opts.cleanSession) {
+    if (!_opts._resolvedCleanSession) {
       await _resume();
     }
 
-    if (_opts.onConnectionHandler != null) {
-      _opts.onConnectionHandler(this);
-    }
+    _opts.onConnectionHandler?.call(this);
 
     r.flowComplete();
     return r;
@@ -154,20 +159,21 @@ class Connection with ConnectionHandler {
   /// last return code a server sent, or ErrRefusedServerUnavailable if no
   /// server answered.
   Future<ConnectReturnCode> _attemptConnection({bool resume = false}) async {
-    int returnCode;
+    int? returnCode;
     var result = ConnectReturnCode.ErrRefusedServerUnavailable;
 
-    for (var uri in _opts.servers) {
+    for (var uri in _opts._resolvedServers) {
       returnCode = null;
-      String error;
+      String? error;
       await runZonedGuarded(() async {
-        await newConnection(this, uri, _opts.connectTimeout,
-                authority: _opts.authority)
-            .timeout(_opts.connectTimeout)
+        await newConnection(this, uri, _opts._resolvedConnectTimeout,
+                authority: _opts._resolvedAuthority)
+            .timeout(_opts._resolvedConnectTimeout)
             .catchError((dynamic e) {
           error =
               'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. $e}';
           print(error);
+          return false;
         });
         if (error == null) {
           // get Connect message from options.
@@ -180,6 +186,7 @@ class Connection with ConnectionHandler {
             final message =
                 'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
             print(message);
+            return null;
           });
         }
       }, (e, s) {
@@ -190,10 +197,11 @@ class Connection with ConnectionHandler {
       if (returnCode == ConnectReturnCode.Accepted.index) {
         return ConnectReturnCode.Accepted;
       }
-      if (returnCode != null &&
-          returnCode >= 0 &&
-          returnCode < ConnectReturnCode.values.length) {
-        result = ConnectReturnCode.values[returnCode];
+      final code = returnCode;
+      if (code != null &&
+          code >= 0 &&
+          code < ConnectReturnCode.values.length) {
+        result = ConnectReturnCode.values[code];
       }
       if (connectionHandler != null) {
         connectionHandler.close();
@@ -206,13 +214,13 @@ class Connection with ConnectionHandler {
   /// trying each server in turn and pausing longer after each failed round,
   /// up to maxReconnectDuration, until it connects or is disconnected.
   Future<void> reconnect() async {
-    final max = _opts.maxReconnectDuration;
+    final max = _opts._resolvedMaxReconnectDuration;
     var sleep = const Duration(seconds: 1);
     if (sleep > max) {
       sleep = max;
     }
     while (!_isClosed()) {
-      ConnectReturnCode rc;
+      ConnectReturnCode? rc;
       try {
         rc = await _attemptConnection(resume: true);
       } catch (e) {
@@ -241,7 +249,7 @@ class Connection with ConnectionHandler {
   /// when the connection dropped can be delivered twice.
   void _reconnected() {
     _down = false;
-    if (_opts.keepAlive != 0) {
+    if (_opts._resolvedKeepAlive != 0) {
       cancelTimer();
       _pingOutstanding = 0;
       _updateLastAction();
@@ -283,9 +291,7 @@ class Connection with ConnectionHandler {
       send.sink.add(m);
     }
 
-    if (_opts.onConnectionHandler != null) {
-      _opts.onConnectionHandler(this);
-    }
+    _opts.onConnectionHandler?.call(this);
   }
 
   /// _submit sends a request, or keeps it while the client reconnects, for
@@ -298,7 +304,7 @@ class Connection with ConnectionHandler {
       return;
     }
     _pending.add(m);
-    Timer(_opts.writeTimeout, () {
+    Timer(_opts._resolvedWriteTimeout, () {
       if (_pending.remove(m)) {
         _fail(m, 'not connected within the write timeout');
       }
@@ -354,9 +360,7 @@ class Connection with ConnectionHandler {
       // Disconnect() called but not connected
       return;
     }
-    if (_opts.connectionLostHandler != null) {
-      _opts.connectionLostHandler();
-    }
+    _opts.connectionLostHandler?.call();
   }
 
   /// internalConnLost cleanup when connection is lost or an error occurs
@@ -369,11 +373,9 @@ class Connection with ConnectionHandler {
       return;
     }
     connectionHandler?.close();
-    if (_opts.autoReconnect) {
+    if (_opts._resolvedAutoReconnect) {
       _down = true;
-      if (_opts.connectionLostHandler != null) {
-        _opts.connectionLostHandler();
-      }
+      _opts.connectionLostHandler?.call();
       reconnect();
       return;
     }
@@ -382,9 +384,7 @@ class Connection with ConnectionHandler {
     cancelTimer();
     _failAll('connection lost');
     _messageIds._cleanUp();
-    if (_opts.connectionLostHandler != null) {
-      _opts.connectionLostHandler();
-    }
+    _opts.connectionLostHandler?.call();
   }
 
   /// publish will publish a message with the specified delivery mode and content
@@ -392,7 +392,7 @@ class Connection with ConnectionHandler {
   Result publish(String topic, Uint8List payload,
       {deliveryMode = DeliveryMode.express, int delay = 0, String ttl = ""}) {
     var r = PublishResult();
-    if (!_opts.connectRetry && _isClosed()) {
+    if (!_opts._resolvedConnectRetry && _isClosed()) {
       r.setError("error not connected");
       return r;
     }
@@ -401,9 +401,9 @@ class Connection with ConnectionHandler {
     final messageID = _messageIds._nextID(r);
     final pub = Publish(messageID, messages, deliveryMode);
 
-    var publishWaitTimeout = _opts.writeTimeout;
+    var publishWaitTimeout = _opts._resolvedWriteTimeout;
     if (publishWaitTimeout.inMilliseconds == 0) {
-      publishWaitTimeout = _opts.writeTimeout;
+      publishWaitTimeout = _opts._resolvedWriteTimeout;
     }
 
     /// persist outbound
@@ -424,7 +424,7 @@ class Connection with ConnectionHandler {
 // a message is published on the topic provided.
   Result relay(List<String> topics, {String last = ""}) {
     var r = RelayResult();
-    if (!_opts.connectRetry && _isClosed()) {
+    if (!_opts._resolvedConnectRetry && _isClosed()) {
       r.setError("error not connected");
       return r;
     }
@@ -438,9 +438,9 @@ class Connection with ConnectionHandler {
     final messageID = _messageIds._nextID(r);
     final rel = Relay(messageID, requests);
 
-    var relayWaitTimeout = _opts.writeTimeout;
+    var relayWaitTimeout = _opts._resolvedWriteTimeout;
     if (relayWaitTimeout.inMilliseconds == 0) {
-      relayWaitTimeout = _opts.writeTimeout;
+      relayWaitTimeout = _opts._resolvedWriteTimeout;
     }
 
     /// persist outbound
@@ -462,7 +462,7 @@ class Connection with ConnectionHandler {
   Result subscribe(String topic,
       {deliveryMode = DeliveryMode.express, int delay = 0}) {
     var r = SubscribeResult();
-    if (!_opts.connectRetry && _isClosed()) {
+    if (!_opts._resolvedConnectRetry && _isClosed()) {
       r.setError("error not connected");
       return r;
     }
@@ -472,7 +472,7 @@ class Connection with ConnectionHandler {
     final messageID = _messageIds._nextID(r);
     final sub = Subscribe(messageID, subs);
 
-    var subscribeWaitTimeout = _opts.writeTimeout;
+    var subscribeWaitTimeout = _opts._resolvedWriteTimeout;
     if (subscribeWaitTimeout.inMilliseconds == 0) {
       subscribeWaitTimeout = Duration(seconds: 30);
     }
@@ -496,7 +496,7 @@ class Connection with ConnectionHandler {
   /// received.
   Result unsubscribe(List<String> topics) {
     var r = UnsubscribeResult();
-    if (!_opts.connectRetry && _isClosed()) {
+    if (!_opts._resolvedConnectRetry && _isClosed()) {
       r.setError("error not connected");
       return r;
     }
@@ -509,7 +509,7 @@ class Connection with ConnectionHandler {
     final messageID = _messageIds._nextID(r);
     final unsub = Unsubscribe(messageID, subs);
 
-    var unsubscribeWaitTimeout = _opts.writeTimeout;
+    var unsubscribeWaitTimeout = _opts._resolvedWriteTimeout;
     if (unsubscribeWaitTimeout.inMilliseconds == 0) {
       unsubscribeWaitTimeout = Duration(seconds: 30);
     }
@@ -536,9 +536,10 @@ class Connection with ConnectionHandler {
     }
     for (final key in keys) {
       final message =
-          await localStore?.getMessage(sessionId, key)?.catchError((dynamic e) {
+          await localStore?.getMessage(sessionId, key).catchError((dynamic e) {
         final error = 'Connect: error on resume message Ids. $e}';
         print(error);
+        return null;
       });
       if (message == null) {
         continue;
@@ -546,8 +547,9 @@ class Connection with ConnectionHandler {
       switch (message.type()) {
         case MessageType.PUBLISH:
           var r = PublishResult();
-          r.messageID = message.getInfo().messageID;
-          _messageIds._resumeID(r.messageID, r);
+          final id = message.getInfo().messageID;
+          r.messageID = id;
+          _messageIds._resumeID(id, r);
       }
     }
   }
@@ -560,9 +562,10 @@ class Connection with ConnectionHandler {
     }
     for (final key in keys) {
       final message =
-          await localStore?.getMessage(sessionId, key)?.catchError((dynamic e) {
+          await localStore?.getMessage(sessionId, key).catchError((dynamic e) {
         final error = 'Connect: error on resume. $e}';
         print(error);
+        return null;
       });
       if (message == null) {
         continue;
@@ -615,13 +618,11 @@ class Connection with ConnectionHandler {
   void _pingAcknowledgmentReceived() {
     _pingOutstanding = 0;
     _updateLastTouched();
-    if (_opts.heartBeatHandler != null) {
-      _opts.heartBeatHandler();
-    }
+    _opts.heartBeatHandler?.call();
   }
 
   void _updateLastAction() {
-    if (_opts.keepAlive != 0) {
+    if (_opts._resolvedKeepAlive != 0) {
       _lastAction = _timeNow();
     }
   }

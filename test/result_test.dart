@@ -39,7 +39,7 @@ void main() {
           .get(const Duration(milliseconds: 100))
           .timeout(const Duration(seconds: 2), onTimeout: () {
         hung = true;
-        return null;
+        return false;
       });
       expect(hung, isFalse,
           reason: 'get(100ms) was still waiting after 2s for a result that never completes');

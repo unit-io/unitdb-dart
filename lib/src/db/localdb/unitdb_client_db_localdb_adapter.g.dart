@@ -18,20 +18,21 @@ class MessageEntity extends DataClass implements Insertable<MessageEntity> {
   final DateTime createdAt;
 
   /// The message payload
-  final Uint8List utpMessage;
+  final Uint8List? utpMessage;
   MessageEntity(
-      {@required this.id,
-      @required this.sessionId,
-      @required this.createdAt,
+      {required this.id,
+      required this.sessionId,
+      required this.createdAt,
       this.utpMessage});
-  factory MessageEntity.fromData(Map<String, dynamic> data, {String prefix}) {
+  factory MessageEntity.fromData(Map<String, dynamic> data, {String? prefix}) {
     final effectivePrefix = prefix ?? '';
     return MessageEntity(
-      id: const IntType().mapFromDatabaseResponse(data['${effectivePrefix}id']),
+      id: const IntType()
+          .mapFromDatabaseResponse(data['${effectivePrefix}id'])!,
       sessionId: const IntType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}session_id']),
+          .mapFromDatabaseResponse(data['${effectivePrefix}session_id'])!,
       createdAt: const DateTimeType()
-          .mapFromDatabaseResponse(data['${effectivePrefix}created_at']),
+          .mapFromDatabaseResponse(data['${effectivePrefix}created_at'])!,
       utpMessage: const BlobType()
           .mapFromDatabaseResponse(data['${effectivePrefix}utp_message']),
     );
@@ -39,30 +40,20 @@ class MessageEntity extends DataClass implements Insertable<MessageEntity> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (!nullToAbsent || id != null) {
-      map['id'] = Variable<int>(id);
-    }
-    if (!nullToAbsent || sessionId != null) {
-      map['session_id'] = Variable<int>(sessionId);
-    }
-    if (!nullToAbsent || createdAt != null) {
-      map['created_at'] = Variable<DateTime>(createdAt);
-    }
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<int>(sessionId);
+    map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || utpMessage != null) {
-      map['utp_message'] = Variable<Uint8List>(utpMessage);
+      map['utp_message'] = Variable<Uint8List?>(utpMessage);
     }
     return map;
   }
 
   MessagesCompanion toCompanion(bool nullToAbsent) {
     return MessagesCompanion(
-      id: id == null && nullToAbsent ? const Value.absent() : Value(id),
-      sessionId: sessionId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(sessionId),
-      createdAt: createdAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(createdAt),
+      id: Value(id),
+      sessionId: Value(sessionId),
+      createdAt: Value(createdAt),
       utpMessage: utpMessage == null && nullToAbsent
           ? const Value.absent()
           : Value(utpMessage),
@@ -70,28 +61,31 @@ class MessageEntity extends DataClass implements Insertable<MessageEntity> {
   }
 
   factory MessageEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer serializer}) {
+      {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MessageEntity(
       id: serializer.fromJson<int>(json['id']),
       sessionId: serializer.fromJson<int>(json['sessionId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      utpMessage: serializer.fromJson<Uint8List>(json['utpMessage']),
+      utpMessage: serializer.fromJson<Uint8List?>(json['utpMessage']),
     );
   }
   @override
-  Map<String, dynamic> toJson({ValueSerializer serializer}) {
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'sessionId': serializer.toJson<int>(sessionId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
-      'utpMessage': serializer.toJson<Uint8List>(utpMessage),
+      'utpMessage': serializer.toJson<Uint8List?>(utpMessage),
     };
   }
 
   MessageEntity copyWith(
-          {int id, int sessionId, DateTime createdAt, Uint8List utpMessage}) =>
+          {int? id,
+          int? sessionId,
+          DateTime? createdAt,
+          Uint8List? utpMessage}) =>
       MessageEntity(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
@@ -125,7 +119,7 @@ class MessagesCompanion extends UpdateCompanion<MessageEntity> {
   final Value<int> id;
   final Value<int> sessionId;
   final Value<DateTime> createdAt;
-  final Value<Uint8List> utpMessage;
+  final Value<Uint8List?> utpMessage;
   const MessagesCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
@@ -134,15 +128,15 @@ class MessagesCompanion extends UpdateCompanion<MessageEntity> {
   });
   MessagesCompanion.insert({
     this.id = const Value.absent(),
-    @required int sessionId,
+    required int sessionId,
     this.createdAt = const Value.absent(),
     this.utpMessage = const Value.absent(),
   }) : sessionId = Value(sessionId);
   static Insertable<MessageEntity> custom({
-    Expression<int> id,
-    Expression<int> sessionId,
-    Expression<DateTime> createdAt,
-    Expression<Uint8List> utpMessage,
+    Expression<int>? id,
+    Expression<int>? sessionId,
+    Expression<DateTime>? createdAt,
+    Expression<Uint8List?>? utpMessage,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -153,10 +147,10 @@ class MessagesCompanion extends UpdateCompanion<MessageEntity> {
   }
 
   MessagesCompanion copyWith(
-      {Value<int> id,
-      Value<int> sessionId,
-      Value<DateTime> createdAt,
-      Value<Uint8List> utpMessage}) {
+      {Value<int>? id,
+      Value<int>? sessionId,
+      Value<DateTime>? createdAt,
+      Value<Uint8List?>? utpMessage}) {
     return MessagesCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
@@ -178,7 +172,7 @@ class MessagesCompanion extends UpdateCompanion<MessageEntity> {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
     if (utpMessage.present) {
-      map['utp_message'] = Variable<Uint8List>(utpMessage.value);
+      map['utp_message'] = Variable<Uint8List?>(utpMessage.value);
     }
     return map;
   }
@@ -199,33 +193,29 @@ class $MessagesTable extends Messages
     with TableInfo<$MessagesTable, MessageEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
-  final String _alias;
+  final String? _alias;
   $MessagesTable(this.attachedDatabase, [this._alias]);
   final VerificationMeta _idMeta = const VerificationMeta('id');
-  GeneratedColumn<int> _id;
   @override
-  GeneratedColumn<int> get id =>
-      _id ??= GeneratedColumn<int>('id', aliasedName, false,
-          type: const IntType(), requiredDuringInsert: false);
+  late final GeneratedColumn<int?> id = GeneratedColumn<int?>(
+      'id', aliasedName, false,
+      type: const IntType(), requiredDuringInsert: false);
   final VerificationMeta _sessionIdMeta = const VerificationMeta('sessionId');
-  GeneratedColumn<int> _sessionId;
   @override
-  GeneratedColumn<int> get sessionId =>
-      _sessionId ??= GeneratedColumn<int>('session_id', aliasedName, false,
-          type: const IntType(), requiredDuringInsert: true);
+  late final GeneratedColumn<int?> sessionId = GeneratedColumn<int?>(
+      'session_id', aliasedName, false,
+      type: const IntType(), requiredDuringInsert: true);
   final VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
-  GeneratedColumn<DateTime> _createdAt;
   @override
-  GeneratedColumn<DateTime> get createdAt =>
-      _createdAt ??= GeneratedColumn<DateTime>('created_at', aliasedName, false,
-          type: const IntType(),
-          requiredDuringInsert: false,
-          defaultValue: currentDateAndTime);
+  late final GeneratedColumn<DateTime?> createdAt = GeneratedColumn<DateTime?>(
+      'created_at', aliasedName, false,
+      type: const IntType(),
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
   final VerificationMeta _utpMessageMeta = const VerificationMeta('utpMessage');
-  GeneratedColumn<Uint8List> _utpMessage;
   @override
-  GeneratedColumn<Uint8List> get utpMessage => _utpMessage ??=
-      GeneratedColumn<Uint8List>('utp_message', aliasedName, true,
+  late final GeneratedColumn<Uint8List?> utpMessage =
+      GeneratedColumn<Uint8List?>('utp_message', aliasedName, true,
           type: const BlobType(), requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [id, sessionId, createdAt, utpMessage];
@@ -239,23 +229,23 @@ class $MessagesTable extends Messages
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id'], _idMeta));
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('session_id')) {
       context.handle(_sessionIdMeta,
-          sessionId.isAcceptableOrUnknown(data['session_id'], _sessionIdMeta));
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
     } else if (isInserting) {
       context.missing(_sessionIdMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at'], _createdAtMeta));
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
     if (data.containsKey('utp_message')) {
       context.handle(
           _utpMessageMeta,
           utpMessage.isAcceptableOrUnknown(
-              data['utp_message'], _utpMessageMeta));
+              data['utp_message']!, _utpMessageMeta));
     }
     return context;
   }
@@ -263,7 +253,7 @@ class $MessagesTable extends Messages
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  MessageEntity map(Map<String, dynamic> data, {String tablePrefix}) {
+  MessageEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     return MessageEntity.fromData(data,
         prefix: tablePrefix != null ? '$tablePrefix.' : null);
   }
@@ -276,14 +266,9 @@ class $MessagesTable extends Messages
 
 abstract class _$LocalDb extends GeneratedDatabase {
   _$LocalDb(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
-  $MessagesTable _messages;
-  $MessagesTable get messages => _messages ??= $MessagesTable(this);
-  MessageQuery _messageQuery;
-  MessageQuery get messageQuery =>
-      _messageQuery ??= MessageQuery(this as LocalDb);
-  MessageCommand _messageCommand;
-  MessageCommand get messageCommand =>
-      _messageCommand ??= MessageCommand(this as LocalDb);
+  late final $MessagesTable messages = $MessagesTable(this);
+  late final MessageQuery messageQuery = MessageQuery(this as LocalDb);
+  late final MessageCommand messageCommand = MessageCommand(this as LocalDb);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override

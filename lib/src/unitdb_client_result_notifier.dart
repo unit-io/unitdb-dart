@@ -5,7 +5,7 @@ part of unitdb_client;
 /// goroutines responsible for sending and receiving messages from server
 class MessageAndResult {
   UtpMessage m;
-  Result r;
+  Result? r;
 
   MessageAndResult(this.m, {this.r});
 }
@@ -19,13 +19,13 @@ abstract class ResultNotifier {
 }
 
 class Result implements ResultNotifier {
-  String _err;
+  String? _err;
   final completer = Completer<bool>();
   /// flowComplete marks the call complete. Completing more than once, e.g.
   /// setError followed by flowComplete during clean-up, is a no-op.
   void flowComplete() {
     if (!completer.isCompleted) {
-      completer.complete(null);
+      completer.complete(true);
     }
   }
 
@@ -34,7 +34,7 @@ class Result implements ResultNotifier {
     flowComplete();
   }
 
-  String error() {
+  String? error() {
     return _err;
   }
 
@@ -42,16 +42,18 @@ class Result implements ResultNotifier {
   /// returns true if the call completed, false if it timed out, and throws the
   /// error if the call failed.
   Future<bool> get(Duration waitDuration) async {
-    if (_err != null && _err.isNotEmpty) {
-      throw _err;
+    var err = _err;
+    if (err != null && err.isNotEmpty) {
+      throw err;
     }
     try {
       await completer.future.timeout(waitDuration);
     } on TimeoutException {
       return false;
     }
-    if (_err != null && _err.isNotEmpty) {
-      throw _err;
+    err = _err;
+    if (err != null && err.isNotEmpty) {
+      throw err;
     }
     return true;
   }
@@ -60,60 +62,60 @@ class Result implements ResultNotifier {
 /// ConnectResult is an extension of result containing extra fields
 /// it provides information about calls to Connect()
 class ConnectResult extends Result {
-  int _returnCode;
-  bool _sessionPresent;
+  int? _returnCode;
+  bool? _sessionPresent;
 
   /// ReturnCode returns the acknowledgement code in the connack sent
   /// in response to a Connect()
-  int get returnCode => _returnCode;
+  int? get returnCode => _returnCode;
 
-  set returnCode(int rc) {
+  set returnCode(int? rc) {
     _returnCode = rc;
   }
 
   /// SessionPresent returns a bool representing the value of the
   /// session present field in the connack sent in response to a Connect()
-  bool get sessionPresent => _sessionPresent;
+  bool? get sessionPresent => _sessionPresent;
 }
 
 /// PublishResult is an extension of result containing the extra fields
 /// required to provide information about calls to Publish()
 class PublishResult extends Result {
   @protected
-  int messageID;
+  int? messageID;
 }
 
 /// RelayResult is an extension of result containing the extra fields
 /// required to provide information about calls to Relay()
 class RelayResult extends Result {
   @protected
-  int messageID;
-  Map<String, ByteBuffer> relResult;
+  int? messageID;
+  Map<String, ByteBuffer>? relResult;
 
   /// Result returns a map of topics that were requested along with
   /// the matching return code from the server. This is either the DeliveryMode
   /// value of the relay request or an error code.
-  Map<String, ByteBuffer> get result => relResult;
+  Map<String, ByteBuffer>? get result => relResult;
 }
 
 /// SubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Subscribe()
 class SubscribeResult extends Result {
   @protected
-  int messageID;
-  Map<String, ByteBuffer> subResult;
+  int? messageID;
+  Map<String, ByteBuffer>? subResult;
 
   /// Result returns a map of topics that were subscribed to along with
   /// the matching return code from the server. This is either the deliveryMode
   /// value of the subscription or an error code.
-  Map<String, ByteBuffer> get result => subResult;
+  Map<String, ByteBuffer>? get result => subResult;
 }
 
 /// UnsubscribeResult is an extension of result containing the extra fields
 /// required to provide information about calls to Unsubscribe()
 class UnsubscribeResult extends Result {
   @protected
-  int messageID;
+  int? messageID;
 }
 
 /// DisconnectResult is an extension of result containing the extra fields

@@ -27,7 +27,7 @@ Future<void> acked(Result r) async {
 }
 
 void main() {
-  MockServer server;
+  late MockServer server;
   final clients = <Client>[];
 
   setUp(() async {
@@ -47,14 +47,14 @@ void main() {
     await server.stop();
   });
 
-  Client newClient([Options opts]) {
+  Client newClient([Options? opts]) {
     final c = Client('127.0.0.1:${server.port}', clientID,
         (opts ?? Options()).withConnectTimeout(const Duration(seconds: 3)));
     clients.add(c);
     return c;
   }
 
-  Future<Client> connected([Options opts]) async {
+  Future<Client> connected([Options? opts]) async {
     final c = newClient(opts);
     final r = await c.connect().timeout(wait);
     expect(r.error(), isNull, reason: 'connect failed');
@@ -82,8 +82,8 @@ void main() {
     test('reports a refusal and its return code', () async {
       server.connectReturnCode = ConnectReturnCode.ErrNotAuthorised.index;
       final c = newClient();
-      ConnectResult r;
-      Object thrown;
+      late ConnectResult r;
+      Object? thrown;
       try {
         r = await c.connect().timeout(wait) as ConnectResult;
       } catch (e) {
@@ -100,8 +100,8 @@ void main() {
       final c = Client('127.0.0.1:$port', clientID,
           Options().withConnectTimeout(const Duration(seconds: 2)));
       clients.add(c);
-      Result r;
-      Object thrown;
+      late Result r;
+      Object? thrown;
       try {
         r = await c.connect().timeout(const Duration(seconds: 10));
       } catch (e) {
@@ -265,12 +265,14 @@ void main() {
     test('tells the server and rejects later calls', () async {
       final c = await connected();
       await c.disconnect().timeout(wait);
-      await server.waitFor((f) => f.type == pbx.MessageType.DISCONNECT,
-          timeout: const Duration(seconds: 2)).catchError((_) {
+      try {
+        await server.waitFor((f) => f.type == pbx.MessageType.DISCONNECT,
+            timeout: const Duration(seconds: 2));
+      } catch (_) {
         // It may already have been received before we started waiting.
         expect(server.sessions.single.received.map((f) => f.type),
             contains(pbx.MessageType.DISCONNECT));
-      });
+      }
       final r = c.publish('groups.x', bytes('late'));
       expect(r.error(), isNotNull);
     });

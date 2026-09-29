@@ -31,7 +31,7 @@ void main() {
 
     final sub = client();
     final got = <String>[];
-    ConnectResult r;
+    late ConnectResult r;
     try {
       r = await sub.connect().timeout(const Duration(seconds: 15)) as ConnectResult;
     } catch (e) {

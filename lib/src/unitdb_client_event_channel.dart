@@ -30,16 +30,17 @@ abstract class IEventChannel<E extends Event> {
   bool emit() => _delegate.emit();
 
   @Deprecated('User EventChannel instead to have this method available')
-  void notify([E event]) => _delegate.notify(event);
+  void notify([E? event]) => _delegate.notify(event);
 }
 
 class EventChannel<E extends Event> implements IEventChannel<E> {
-  EventChannel<E> _delegate;
+  @override
+  EventChannel<E> get _delegate => this;
 
-  StreamController<List<E>> _changes;
+  StreamController<List<E>>? _changes;
 
   bool _scheduled = false;
-  List<E> _queue;
+  List<E>? _queue;
 
   @override
   Stream<List<E>> get changes =>
@@ -60,16 +61,17 @@ class EventChannel<E extends Event> implements IEventChannel<E> {
   @override
   @mustCallSuper
   bool emit() {
-    List<E> changes;
+    List<E>? changes;
     if (_scheduled && hasObservers) {
-      if (_queue != null) {
-        changes = _queue;
+      final queue = _queue;
+      if (queue != null) {
+        changes = queue;
         _queue = null;
       } else {
-        changes = Event.any;
+        changes = Event.any as List<E>;
       }
       _scheduled = false;
-      _changes.add(changes);
+      _changes!.add(changes);
     }
     return changes != null;
   }
@@ -78,7 +80,7 @@ class EventChannel<E extends Event> implements IEventChannel<E> {
   bool get hasObservers => _changes?.hasListener == true;
 
   @override
-  void notify([E event]) {
+  void notify([E? event]) {
     if (!hasObservers) {
       return;
     }

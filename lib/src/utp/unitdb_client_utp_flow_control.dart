@@ -11,9 +11,9 @@ class ControlMessage implements UtpMessage {
     this._flowControl = flowControl;
   }
 
-  int _messageID;
-  MessageType _messageType;
-  FlowControl _flowControl;
+  late int _messageID;
+  late MessageType _messageType;
+  late FlowControl _flowControl;
 
   int get messageID => _messageID;
 
@@ -33,7 +33,7 @@ class ControlMessage implements UtpMessage {
 
   /// encodeControlMessage encodes the Control Message into binary data
   ByteBuffer encode() {
-    FixedHeader fh;
+    late FixedHeader fh;
     final cm = pbx.ControlMessage();
     cm.messageID = _messageID;
     final data = cm.writeToBuffer();

@@ -9,8 +9,8 @@ class Proxy {
 
   /// target is the port the proxy forwards to, on the loopback address.
   final int target;
-  int port;
-  ServerSocket _listener;
+  int? port;
+  ServerSocket? _listener;
   final _pairs = <List<Socket>>[];
 
   /// While hold is set, what the server sends is held back, not forwarded,
@@ -18,9 +18,10 @@ class Proxy {
   bool hold = false;
 
   Future<void> start() async {
-    _listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, port ?? 0);
-    port = _listener.port;
-    _listener.listen((client) async {
+    final listener =
+        _listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, port ?? 0);
+    port = listener.port;
+    listener.listen((client) async {
       Socket server;
       try {
         server = await Socket.connect(InternetAddress.loopbackIPv4, target);

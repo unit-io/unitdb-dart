@@ -31,7 +31,7 @@ abstract class UtpMessage {
   Info getInfo();
 
   /// read unpacks the Message from the provided stream.
-  static Future<UtpMessage> read(dynamic r) async {
+  static Future<UtpMessage?> read(dynamic r) async {
     final readCompleter = Completer<UtpMessage>();
     var fh = FixedHeader.internal();
     await fh.unpack(r).catchError((dynamic e) {
@@ -45,7 +45,7 @@ abstract class UtpMessage {
         return Disconnect();
     }
 
-    UtpMessage msg;
+    UtpMessage? msg;
 
     try {
       final rawMsg = await r.read(fh.messageSize);
@@ -90,7 +90,7 @@ class FixedHeader {
     this.fh.messageLength = messageLength;
   }
 
-  pbx.FixedHeader fh;
+  late pbx.FixedHeader fh;
 
   int get messageSize => fh.messageLength;
 
@@ -111,7 +111,7 @@ class FixedHeader {
   }
 
   Future<void> unpack(dynamic r) async {
-    final unpackCompleter = Completer<bool>();
+    final unpackCompleter = Completer<void>();
     try {
       final fhSize = await decodeLength(r);
 

@@ -1,6 +1,9 @@
 include: package:pedantic/analysis_options.1.8.0.yaml
 
 analyzer:
+  exclude:
+    # A Flutter app, a package of its own.
+    - example/unitdb_client_example/**
   strong-mode:
     implicit-casts: true
     implicit-dynamic: true

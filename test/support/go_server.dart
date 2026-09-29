@@ -51,20 +51,22 @@ Future<int> freePort() async {
 }
 
 class GoServer {
-  Process process;
-  int grpcPort;
-  int tcpPort;
-  Directory dir;
-  String bin;
+  Process? process;
+  // grpcPort, tcpPort and dir are set with bin, by the first start.
+  late int grpcPort;
+  late int tcpPort;
+  late Directory dir;
+  String? bin;
   final logs = StringBuffer();
 
   /// start builds the server, once, and starts it on free ports.
   Future<void> start() async {
+    var bin = this.bin;
     if (bin == null) {
       final src = Platform.environment['UNITDB_SERVER_DIR'] ??
           '${Directory.current.parent.path}/unitdb/server';
       dir = await Directory.systemTemp.createTemp('unitdb-dart-e2e');
-      bin = '${dir.path}/unitdb-server';
+      bin = this.bin = '${dir.path}/unitdb-server';
       final build =
           await Process.run('go', ['build', '-o', bin, '.'], workingDirectory: src);
       if (build.exitCode != 0) {
@@ -86,7 +88,8 @@ class GoServer {
         },
       }));
     }
-    process = await Process.start(bin, ['-config', 'e2e.conf', '-db_path', '${dir.path}/db']);
+    final process = this.process =
+        await Process.start(bin, ['-config', 'e2e.conf', '-db_path', '${dir.path}/db']);
     process.stdout.transform(utf8.decoder).listen(logs.write);
     process.stderr.transform(utf8.decoder).listen(logs.write);
     final deadline = DateTime.now().add(const Duration(seconds: 15));
@@ -114,7 +117,9 @@ class GoServer {
 
   Future<void> stop() async {
     await kill();
-    await dir?.delete(recursive: true);
+    if (bin != null) {
+      await dir.delete(recursive: true);
+    }
   }
 }
 

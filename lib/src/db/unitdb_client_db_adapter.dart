@@ -12,7 +12,7 @@ abstract class Adapter {
   Future<void> putMessage(int sessionId, UtpMessage message);
 
   // Get message performs a query and attempts to fetch message for the given key
-  Future<UtpMessage> getMessage(int sessionId, int key);
+  Future<UtpMessage?> getMessage(int sessionId, int key);
 
   // Delete message is used to delete message.
   // it returns an error if some error was encountered during delete.

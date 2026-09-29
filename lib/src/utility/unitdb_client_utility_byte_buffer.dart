@@ -3,8 +3,7 @@ part of unitdb_client;
 class ByteBuffer {
   ByteBuffer(this.buffer);
 
-  ByteBuffer.fromList(List<int> data) {
-    buffer = typed.Uint8Buffer();
+  ByteBuffer.fromList(List<int> data) : buffer = typed.Uint8Buffer() {
     buffer.addAll(data);
   }
 
@@ -84,11 +83,7 @@ class ByteBuffer {
   }
 
   void write(typed.Uint8Buffer buffer) {
-    if (this.buffer == null) {
-      this.buffer = buffer;
-    } else {
-      this.buffer.addAll((buffer));
-    }
+    this.buffer.addAll((buffer));
     _position = length;
   }
 
@@ -111,7 +106,7 @@ class ByteBuffer {
 
   @override
   String toString() {
-    if (buffer != null && buffer.isNotEmpty) {
+    if (buffer.isNotEmpty) {
       return 'null or empty';
     } else {
       return buffer.toList().toString();
