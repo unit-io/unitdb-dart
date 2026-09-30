@@ -2,10 +2,7 @@
 
 part of 'unitdb_client_db_localdb_command_message.dart';
 
-// **************************************************************************
-// DaoGenerator
-// **************************************************************************
-
+// ignore_for_file: type=lint
 mixin _$MessageCommandMixin on DatabaseAccessor<LocalDb> {
   $MessagesTable get messages => attachedDatabase.messages;
 }

@@ -3,9 +3,11 @@
 ### Null safety
 
 - The package is null safe, and runs on Dart 3, Flutter 3.10 and later
-  included. It is tested on Dart 2.19 and Dart 3. The SDK constraint is
-  `>=2.14.0 <3.0.0`, which Dart 3 reads as `<4.0.0` for a null-safe
-  package.
+  included. It is tested on Dart 2.19 and the latest Dart 3. The SDK
+  constraint is `>=2.19.0 <3.0.0`, which Dart 3 reads as `<4.0.0` for a
+  null-safe package.
+- The local store uses drift 2 (was drift 1, which is no longer maintained
+  and held the package's tooling back from Dart 3.13).
 - `Options` fields stay nullable, as a builder's: unset means the default.
 - `Message()` with no arguments has an empty topic and payload, and ID 0,
   instead of nulls.
