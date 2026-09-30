@@ -23,7 +23,7 @@ class Connection with ConnectionHandler {
   Stream<List<Message>> get messageStream => eventChannel?.changes;
 
   void cancelTimer() {
-    _keepAliveTimer.cancel();
+    _keepAliveTimer?.cancel();
   }
 
   Future<void> _close() async {
@@ -153,7 +153,7 @@ class Connection with ConnectionHandler {
   /// _attemptConnection tries each server in turn. It returns Accepted, or the
   /// last return code a server sent, or ErrRefusedServerUnavailable if no
   /// server answered.
-  Future<ConnectReturnCode> _attemptConnection() async {
+  Future<ConnectReturnCode> _attemptConnection({bool resume = false}) async {
     int returnCode;
     var result = ConnectReturnCode.ErrRefusedServerUnavailable;
 
@@ -172,6 +172,10 @@ class Connection with ConnectionHandler {
         if (error == null) {
           // get Connect message from options.
           var cm = Connect.withOptions(_opts, uri);
+          if (resume) {
+            // A reconnect resumes the session.
+            cm._cleanSessFlag = false;
+          }
           returnCode = await _connect(cm).catchError((dynamic e) {
             final message =
                 'Connect: The connection to the unitdb messaging server ${uri.host}:${uri.port} could not be made. ${e.toString()}';
@@ -198,44 +202,47 @@ class Connection with ConnectionHandler {
     return result;
   }
 
-// internal function used to reconnect the client when it loses its connection
+/// reconnect connects the client again after it lost its connection,
+  /// trying each server in turn and pausing longer after each failed round,
+  /// up to maxReconnectDuration, until it connects or is disconnected.
   Future<void> reconnect() async {
-    var sleep = Duration(seconds: 1);
-
-    while (true) {
+    final max = _opts.maxReconnectDuration;
+    var sleep = const Duration(seconds: 1);
+    if (sleep > max) {
+      sleep = max;
+    }
+    while (!_isClosed()) {
+      ConnectReturnCode rc;
       try {
-        var rc = await _attemptConnection();
-        if (rc == ConnectReturnCode.Accepted) {
-          _setConnected();
-          break;
-        }
-      } on Exception catch (e) {
-        final message =
-            'Connection::reconnect - Exception occured ${e.toString()}';
-        print(message);
-        _setClosed();
-        if (connectionHandler != null) {
-          connectionHandler.close();
-        }
-        localStore?.disconnect();
-        localStore = null;
-        throw NoConnectionException(message);
+        rc = await _attemptConnection(resume: true);
+      } catch (e) {
+        print('Connection::reconnect - ${e.toString()}');
       }
-      await Future.delayed(sleep);
-      if (sleep < _opts.maxReconnectDuration) {
-        sleep *= 2;
-      }
-
-      if (sleep > _opts.maxReconnectDuration) {
-        sleep = _opts.maxReconnectDuration;
-      }
-      // Disconnect may have been called
       if (_isClosed()) {
+        // Disconnect was called meanwhile.
+        connectionHandler?.close();
         return;
       }
+      if (rc == ConnectReturnCode.Accepted) {
+        _reconnected();
+        return;
+      }
+      await Future<void>.delayed(sleep);
+      sleep *= 2;
+      if (sleep > max) {
+        sleep = max;
+      }
     }
+  }
 
+  /// _reconnected restarts the connection's loops, subscribes again to the
+  /// client's topics, and sends again what the server had not answered, then
+  /// what was requested while the client reconnected. A message in flight
+  /// when the connection dropped can be delivered twice.
+  void _reconnected() {
+    _down = false;
     if (_opts.keepAlive != 0) {
+      cancelTimer();
       _pingOutstanding = 0;
       _updateLastAction();
       _updateLastTouched();
@@ -260,10 +267,57 @@ class Connection with ConnectionHandler {
       _conn._internalConnLost();
     });
 
-    _resume();
+    if (_subscriptions.isNotEmpty) {
+      final r = SubscribeResult();
+      final sub = Subscribe(_messageIds._nextID(r), _subscriptions.values.toList());
+      send.sink.add(MessageAndResult(sub, r: r));
+    }
+    final queued = List<MessageAndResult>.from(_pending);
+    _pending.clear();
+    for (final m in _inflight.values.toList()) {
+      if (!queued.contains(m)) {
+        send.sink.add(m);
+      }
+    }
+    for (final m in queued) {
+      send.sink.add(m);
+    }
 
     if (_opts.onConnectionHandler != null) {
       _opts.onConnectionHandler(this);
+    }
+  }
+
+  /// _submit sends a request, or keeps it while the client reconnects, for
+  /// up to the write timeout. A request is kept until the server answers it.
+  void _submit(MessageAndResult m) {
+    final id = m.m.getInfo().messageID;
+    _inflight[id] = m;
+    if (!_down) {
+      send.sink.add(m);
+      return;
+    }
+    _pending.add(m);
+    Timer(_opts.writeTimeout, () {
+      if (_pending.remove(m)) {
+        _fail(m, 'not connected within the write timeout');
+      }
+    });
+  }
+
+  /// _fail completes a request with err, and forgets it.
+  void _fail(MessageAndResult m, String err) {
+    final id = m.m.getInfo().messageID;
+    _inflight.remove(id);
+    _messageIds._freeID(id);
+    m.r?.setError(err);
+  }
+
+  /// _failAll fails the requests the server has not answered.
+  void _failAll(String err) {
+    _pending.clear();
+    for (final m in _inflight.values.toList()) {
+      _fail(m, err);
     }
   }
 
@@ -271,6 +325,18 @@ class Connection with ConnectionHandler {
   Future<void> disconnect() async {
     if (_isClosed()) {
       // Disconnect() called but not connected
+      return;
+    }
+    if (_down) {
+      // Reconnecting: there is no connection to send DISCONNECT on. The
+      // reconnect loop stops, seeing the client closed.
+      _setClosed();
+      _down = false;
+      cancelTimer();
+      _failAll('client disconnected');
+      connectionHandler?.close();
+      await localStore?.disconnect();
+      localStore = null;
       return;
     }
 
@@ -298,16 +364,26 @@ class Connection with ConnectionHandler {
     // It is possible that internalConnLost will be called multiple times simultaneously
     // (including after sending a DisconnectPacket) as such we only do cleanup etc if the
     // routines were actually running and are not being disconnected at users request
-    if (!_isClosed()) {
-      if (_opts.cleanSession && !_opts.autoReconnect) {
-        _messageIds._cleanUp();
-      }
-      if (_opts.autoReconnect) {
-        reconnect();
-      }
+    if (_isClosed() || _down) {
+      // Closed, or a reconnect is under way.
+      return;
+    }
+    connectionHandler?.close();
+    if (_opts.autoReconnect) {
+      _down = true;
       if (_opts.connectionLostHandler != null) {
         _opts.connectionLostHandler();
       }
+      reconnect();
+      return;
+    }
+    // Without auto reconnect the client closes: its calls fail from now on.
+    _setClosed();
+    cancelTimer();
+    _failAll('connection lost');
+    _messageIds._cleanUp();
+    if (_opts.connectionLostHandler != null) {
+      _opts.connectionLostHandler();
     }
   }
 
@@ -338,7 +414,7 @@ class Connection with ConnectionHandler {
         print('storing publish message, topic: $topic');
         break;
       default:
-        send.sink.add(MessageAndResult(pub, r: r));
+        _submit(MessageAndResult(pub, r: r));
     }
 
     return r;
@@ -375,7 +451,7 @@ class Connection with ConnectionHandler {
         print('storing relay message, topics: $topics');
         break;
       default:
-        send.sink.add(MessageAndResult(rel, r: r));
+        _submit(MessageAndResult(rel, r: r));
     }
 
     return r;
@@ -392,6 +468,7 @@ class Connection with ConnectionHandler {
     }
 
     final subs = [Subscription(topic, deliveryMode, delay)];
+    _subscriptions[topic] = subs[0];
     final messageID = _messageIds._nextID(r);
     final sub = Subscribe(messageID, subs);
 
@@ -408,7 +485,7 @@ class Connection with ConnectionHandler {
         print('storing subscribe message, topic: $topic');
         break;
       default:
-        send.sink.add(MessageAndResult(sub, r: r));
+        _submit(MessageAndResult(sub, r: r));
     }
 
     return r;
@@ -427,6 +504,7 @@ class Connection with ConnectionHandler {
     List<Subscription> subs = [];
     for (var topic in topics) {
       subs.add(Subscription(topic));
+      _subscriptions.remove(topic);
     }
     final messageID = _messageIds._nextID(r);
     final unsub = Unsubscribe(messageID, subs);
@@ -444,7 +522,7 @@ class Connection with ConnectionHandler {
         print('storing unsubcribe message, topics: $topics');
         break;
       default:
-        send.sink.add(MessageAndResult(unsub, r: r));
+        _submit(MessageAndResult(unsub, r: r));
     }
 
     return r;

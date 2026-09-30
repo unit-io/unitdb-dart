@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # One pull request a week for the package's dependencies with an update,
+  # so that they are tested together.
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      pub-dependencies:
+        patterns: ["*"]
+    # Major versions need a null-safe package, and Dart 3: not yet.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

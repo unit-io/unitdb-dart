@@ -24,6 +24,7 @@ class Connect implements UtpMessage {
 
     this._sessionData = opts.sessionData;
     this._keepAlive = opts.keepAlive;
+    this._sessKey = opts.sessionKey ?? 0;
 
     print('connect::withOptions - username $username');
 
@@ -37,7 +38,7 @@ class Connect implements UtpMessage {
   Uint8List _password;
   String _sessionData;
   int _keepAlive;
-  // int _keepAlive;
+  int _sessKey;
 
   /// type returns the Message type.
   MessageType type() {
@@ -60,6 +61,8 @@ class Connect implements UtpMessage {
     }
     // The server protocol has no session data, so it is not sent.
     conn.keepAlive = _keepAlive ?? 0;
+    // A 32-bit key, sent as the protocol's int32, as unitdb-go does.
+    conn.sessKey = (_sessKey ?? 0).toSigned(32);
     final data = conn.writeToBuffer();
 
     final fh =
