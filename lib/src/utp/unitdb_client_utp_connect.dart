@@ -2,17 +2,17 @@ part of unitdb_client;
 
 class Connect implements UtpMessage {
   Connect.withOptions(Options opts, Uri server) {
-    this._cleanSessFlag = opts.cleanSession;
+    this._cleanSessFlag = opts._resolvedCleanSession;
     this._clientID = opts.clientID;
-    this._insecureFlag = opts.insecureFlag;
+    this._insecureFlag = opts._resolvedInsecureFlag;
 
-    var user = server.userInfo?.split(':') ?? [];
+    var user = server.userInfo.split(':');
     print('connect::withOption - user $user userName ${opts.username}');
     var username =
-        user.length == 0 || user[0].isEmpty ? opts.username : user[0];
+        user.length == 0 || user[0].isEmpty ? opts._resolvedUsername : user[0];
     var password = user.length > 1 && user[1].isNotEmpty
         ? Uint8List.fromList(utf8.encode(user[1]))
-        : opts.password;
+        : opts._resolvedPassword;
 
     if (username.isNotEmpty) {
       this._username = username;
@@ -23,7 +23,7 @@ class Connect implements UtpMessage {
     }
 
     this._sessionData = opts.sessionData;
-    this._keepAlive = opts.keepAlive;
+    this._keepAlive = opts.keepAlive ?? 0;
     this._sessKey = opts.sessionKey ?? 0;
 
     print('connect::withOptions - username $username');
@@ -31,14 +31,14 @@ class Connect implements UtpMessage {
     // this._keepAlive = opts.keepAlive;
   }
 
-  bool _cleanSessFlag;
-  String _clientID;
-  bool _insecureFlag;
-  String _username;
-  Uint8List _password;
-  String _sessionData;
-  int _keepAlive;
-  int _sessKey;
+  late bool _cleanSessFlag;
+  String? _clientID;
+  late bool _insecureFlag;
+  String? _username;
+  Uint8List? _password;
+  String? _sessionData;
+  late int _keepAlive;
+  late int _sessKey;
 
   /// type returns the Message type.
   MessageType type() {
@@ -56,13 +56,14 @@ class Connect implements UtpMessage {
     conn.clientID = _clientID ?? "";
     conn.insecureFlag = _insecureFlag;
     conn.username = _username ?? "";
-    if (_password != null) {
-      conn.password = _password;
+    final password = _password;
+    if (password != null) {
+      conn.password = password;
     }
     // The server protocol has no session data, so it is not sent.
-    conn.keepAlive = _keepAlive ?? 0;
+    conn.keepAlive = _keepAlive;
     // A 32-bit key, sent as the protocol's int32, as unitdb-go does.
-    conn.sessKey = (_sessKey ?? 0).toSigned(32);
+    conn.sessKey = _sessKey.toSigned(32);
     final data = conn.writeToBuffer();
 
     final fh =
@@ -80,11 +81,11 @@ class ConnectAcknowledge implements UtpMessage {
     this._connID = connID;
   }
 
-  int _returnCode;
+  late int _returnCode;
 
-  int _epoch;
+  late int _epoch;
 
-  int _connID;
+  late int _connID;
 
   int get returnCode => _returnCode;
 
@@ -121,7 +122,7 @@ class Pingreq implements UtpMessage {
   Pingreq() {
     pingreq = pbx.PingRequest();
   }
-  pbx.PingRequest pingreq;
+  late pbx.PingRequest pingreq;
 
   /// type returns the Message type.
   MessageType type() {
@@ -150,7 +151,7 @@ class Disconnect implements UtpMessage {
   Disconnect() {
     disconn = pbx.Disconnect();
   }
-  pbx.Disconnect disconn;
+  late pbx.Disconnect disconn;
 
   /// type returns the Message type.
   MessageType type() {

@@ -10,8 +10,14 @@ permissions:
 
 jobs:
   test:
+    name: Test (Dart ${{ matrix.sdk }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest SDK the package supports that CI can run, and the latest.
+        sdk: [2.19.6, stable]
     steps:
       - uses: actions/checkout@v7
       # The Go-server tests build the unitdb server from source.
@@ -22,11 +28,9 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: unitdb-server/go.mod
-      # The package is not null safe yet: Dart 2.19 is the last SDK that runs
-      # it.
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: 2.19.6
+          sdk: ${{ matrix.sdk }}
       - run: dart pub get
       - run: dart analyze --no-fatal-warnings lib test
       - run: dart test

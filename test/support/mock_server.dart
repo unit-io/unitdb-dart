@@ -65,7 +65,7 @@ class MockSession {
   final out = StreamController<pbx.Packet>();
   final subscriptions = <String, int>{}; // topic -> delivery mode
   final received = <Frame>[];
-  pbx.Connect connect;
+  late pbx.Connect connect;
   int _nextId = 0;
   bool closed = false;
 
@@ -110,8 +110,8 @@ class MockServer extends UnitdbServiceBase {
   /// Every frame received from any client, as it arrives.
   Stream<Frame> get frames => _events.stream;
 
-  Server _grpc;
-  int get port => _grpc.port;
+  late Server _grpc;
+  int? get port => _grpc.port;
 
   Future<void> start() async {
     _grpc = Server([this]);
@@ -208,7 +208,7 @@ class MockServer extends UnitdbServiceBase {
   }
 
   /// Returns the delivery mode of the first subscription matching topic.
-  static int _match(Map<String, int> subs, String topic) {
+  static int? _match(Map<String, int> subs, String topic) {
     for (final e in subs.entries) {
       if (_matches(e.key, topic)) return e.value;
     }

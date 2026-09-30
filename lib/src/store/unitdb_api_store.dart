@@ -6,7 +6,7 @@ import 'package:unitdb_client/src/db/localdb/unitdb_client_db_localdb_adapter.da
 import 'package:unitdb_client/src/db/localdb/unitdb_client_db_localdb.dart';
 
 class Store extends Adapter {
-  adapter.LocalDb db;
+  adapter.LocalDb? db;
   final _mutex = ReadWriteMutex();
 
   adapter.LocalDb _defaultDatabaseProvider(String userId) =>
@@ -17,11 +17,12 @@ class Store extends Adapter {
     if (db != null) {
       throw Exception('An instance of LocalDb is already connected.');
     }
-    db = _defaultDatabaseProvider(userId);
+    final localDb = _defaultDatabaseProvider(userId);
+    db = localDb;
     _mutex.protectWrite(() async {
       if (reset) {
         print('localstore: reset db');
-        await db.reset();
+        await localDb.reset();
       }
     });
   }
@@ -29,27 +30,36 @@ class Store extends Adapter {
   @override
   Future<void> putMessage(int sessionId, UtpMessage message) {
     return _mutex
-        .protectRead(() => db.messageCommand.putMessage(sessionId, message));
+        .protectRead(() => _db.messageCommand.putMessage(sessionId, message));
   }
 
   @override
-  Future<UtpMessage> getMessage(int sessionId, int key) {
-    return _mutex.protectRead(() => db.messageQuery.getMessage(sessionId, key));
+  Future<UtpMessage?> getMessage(int sessionId, int key) {
+    return _mutex.protectRead(() => _db.messageQuery.getMessage(sessionId, key));
   }
 
   @override
   Future<void> deleteMessage(int sessionId, int key) {
     return _mutex
-        .protectRead(() => db.messageCommand.deleteMessage(sessionId, key));
+        .protectRead(() => _db.messageCommand.deleteMessage(sessionId, key));
   }
 
   @override
   Future<List<int>> keys() {
-    return _mutex.protectRead(() => db.messageQuery.keys);
+    return _mutex.protectRead(() => _db.messageQuery.keys);
+  }
+
+  /// _db returns the connected database, and throws if there is none.
+  adapter.LocalDb get _db {
+    final localDb = db;
+    if (localDb == null) {
+      throw StateError('LocalDb is not connected.');
+    }
+    return localDb;
   }
 
 // handle which outgoing messages are stored
-  Future<void> persistOutbound(int sessionId, UtpMessage outMessage) {
+  Future<void> persistOutbound(int sessionId, UtpMessage outMessage) async {
     switch (outMessage.type()) {
       case MessageType.PUBLISH:
       case MessageType.SUBSCRIBE:
@@ -72,7 +82,7 @@ class Store extends Adapter {
   }
 
 // handle which incoming messages are stored
-  Future<void> persistInbound(int sessionId, UtpMessage inMessage) {
+  Future<void> persistInbound(int sessionId, UtpMessage inMessage) async {
     switch (inMessage.type()) {
       case MessageType.PUBLISH:
         // Received a publish. store it in ibound
@@ -100,8 +110,9 @@ class Store extends Adapter {
 
   @override
   Future<void> disconnect() async => _mutex.protectWrite(() async {
-        if (db != null) {
-          await db.disconnect();
+        final localDb = db;
+        if (localDb != null) {
+          await localDb.disconnect();
           db = null;
         }
       });

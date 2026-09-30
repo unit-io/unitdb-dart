@@ -1,36 +1,45 @@
 part of unitdb_client;
 
 class ConnectionHandler {
-  Options _opts;
-  int _contract;
-  _MessageIdentifiers _messageIds; // local identifier of messages
-  int _connID; // Theunique id of the connection.
+  // _opts, _contract, _messageIds, _callbacks and _closed are set by the
+  // Connection constructor.
+  late Options _opts;
+  late int _contract;
+  late _MessageIdentifiers _messageIds; // local identifier of messages
+  int? _connID; // Theunique id of the connection.
 
-  int get connectionId => _connID;
+  int? get connectionId => _connID;
 
-  int get sessionId => _opts.username.isNotEmpty ? _opts.username.hashCode : 1;
+  int get sessionId => _opts._resolvedUsername.isNotEmpty
+      ? _opts._resolvedUsername.hashCode
+      : 1;
 
-  Map<int, MessageHandler> _callbacks;
+  late Map<int, MessageHandler?> _callbacks;
 
-  Connection _conn;
+  /// The connection this handler belongs to, set by newConnection before
+  /// the connection's loops run.
+  late Connection _conn;
 
-  Store localStore;
+  Store? localStore;
 
   /// The Handler that is managing the connection to the remote server.
   @protected
   dynamic connectionHandler;
   // ServerConnection serverConn;
 
+  // _lastTouched and _lastAction are set before the keepalive timer, which
+  // reads them, starts.
+
   /// Time when the keepalive session was last refreshed
-  DateTime _lastTouched;
+  late DateTime _lastTouched;
 
   /// Time when the session received any packer from client
-  DateTime _lastAction;
+  late DateTime _lastAction;
 
   final _waitGroup = <Future>[];
-  Timer _keepAliveTimer;
-  int _pingOutstanding;
-  int _closed;
+  Timer? _keepAliveTimer;
+  int _pingOutstanding = 0;
+  late int _closed;
 
   /// _down is set while the connection is lost and the client reconnects.
   bool _down = false;
@@ -66,13 +75,13 @@ class ConnectionHandler {
   /// Connect takes a connected net.Conn and performs the initial handshake. Paramaters are:
   /// conn - Connected net.Conn
   /// cm - Connect Packet
-  Future<int> _connect(Connect cm) async {
+  Future<int?> _connect(Connect cm) async {
     // try {
     var m = cm.encode();
     await connectionHandler.write(m);
     final next = await connectionHandler
         .hasNext()
-        .timeout(_conn._opts.connectTimeout)
+        .timeout(_conn._opts._resolvedConnectTimeout)
         .catchError((dynamic e) {
       throw NoConnectionException('${e.toString()}');
     });
@@ -86,17 +95,17 @@ class ConnectionHandler {
   /// when the connection is first started.
   /// This prevents receiving incoming data while resume
   /// is in progress if clean session is false.
-  Future<int> _verifyCONNACK() async {
+  Future<int?> _verifyCONNACK() async {
     await connectionHandler
-        .next(_conn._opts.connectTimeout)
+        .next(_conn._opts._resolvedConnectTimeout)
         .catchError((dynamic e) {
       throw NoConnectionException('${e.toString()}');
     });
-    ConnectAcknowledge ca =
-        await UtpMessage.read(connectionHandler).catchError((dynamic e) {
+    final ca = await UtpMessage.read(connectionHandler)
+        .catchError((dynamic e) {
       throw NoConnectionException('${e.toString()}');
-    });
-    if (ca?.returnCode == ConnectReturnCode.Accepted.index) {
+    }) as ConnectAcknowledge?;
+    if (ca != null && ca.returnCode == ConnectReturnCode.Accepted.index) {
       _connID = ca.connID;
       return ca.returnCode;
     }
@@ -113,7 +122,7 @@ class ConnectionHandler {
         return;
       }
       await connectionHandler
-          .next(_conn._opts.connectTimeout)
+          .next(_conn._opts._resolvedConnectTimeout)
           .catchError((dynamic e) {
         throw NoConnectionException('${e.toString()}');
       });
@@ -144,7 +153,7 @@ class ConnectionHandler {
 
     switch (msg.type()) {
       case MessageType.FLOWCONTROL:
-        ControlMessage ctrl = msg;
+        ControlMessage ctrl = msg as ControlMessage;
         switch (ctrl.flowControl) {
           case FlowControl.ACKNOWLEDGE:
             switch (ctrl.messageType) {
@@ -178,7 +187,7 @@ class ConnectionHandler {
         }
         break;
       case MessageType.PUBLISH:
-        pub.sink.add(msg);
+        pub.sink.add(msg as Publish);
         break;
       case MessageType.DISCONNECT:
         _conn.serverDisconnect();
@@ -190,7 +199,7 @@ class ConnectionHandler {
     send.stream.listen((msg) {
       switch (msg.m.type()) {
         case MessageType.DISCONNECT:
-          msg.r.flowComplete();
+          msg.r?.flowComplete();
           var mId = msg.m.getInfo().messageID;
           _messageIds._freeID(mId);
           break;
@@ -209,7 +218,7 @@ class ConnectionHandler {
       }
     }
     pub.stream.listen((p) {
-      final ack = _ack(this, p);
+      final ack = _ack(this as Connection, p);
       for (var pubMsg in p.messages) {
         var m = Message.messageFromPublish(p.getInfo().messageID, pubMsg, ack);
         eventChannel.notify(m);
@@ -228,10 +237,10 @@ class ConnectionHandler {
     int pingInterval;
     var pingSent = _conn._timeNow();
 
-    if (_opts.keepAlive > 10) {
+    if (_opts._resolvedKeepAlive > 10) {
       pingInterval = 5;
     } else {
-      pingInterval = _opts.keepAlive ~/ 2;
+      pingInterval = _opts._resolvedKeepAlive ~/ 2;
     }
 
     // /// Send an initial ping request
@@ -246,8 +255,8 @@ class ConnectionHandler {
       final sinceLastSent = _conn._timeNow().difference(_lastAction).inSeconds;
       final sinceLastReceived =
           _conn._timeNow().difference(_lastTouched).inSeconds;
-      var liveDuration = Duration(seconds: _opts.keepAlive).inSeconds;
-      var timeout = _conn._timeNow().add(-_opts.pingTimeout);
+      var liveDuration = Duration(seconds: _opts._resolvedKeepAlive).inSeconds;
+      var timeout = _conn._timeNow().add(-_opts._resolvedPingTimeout);
 
       if (sinceLastSent >= liveDuration || sinceLastReceived >= liveDuration) {
         if (_pingOutstanding == 0) {
@@ -260,7 +269,7 @@ class ConnectionHandler {
         }
       }
       if (_pingOutstanding > 0 &&
-          _conn._timeNow().difference(pingSent) >= _opts.pingTimeout) {
+          _conn._timeNow().difference(pingSent) >= _opts._resolvedPingTimeout) {
         await _conn
             ._internalConnLost(); // no harm in calling this if the connection is already down (better than stopping!)
         timer.cancel();

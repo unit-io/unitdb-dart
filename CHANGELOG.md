@@ -1,5 +1,22 @@
 ## Unreleased
 
+### Null safety
+
+- The package is null safe, and runs on Dart 3, Flutter 3.10 and later
+  included. It is tested on Dart 2.19 and the latest Dart 3. The SDK
+  constraint is `>=2.19.0 <3.0.0`, which Dart 3 reads as `<4.0.0` for a
+  null-safe package.
+- The local store uses drift 2 (was drift 1, which is no longer maintained
+  and held the package's tooling back from Dart 3.13).
+- `Options` fields stay nullable, as a builder's: unset means the default.
+- `Message()` with no arguments has an empty topic and payload, and ID 0,
+  instead of nulls.
+- Works with grpc 3.2. It used grpc's internal `onStateChanged`, which 3.2
+  changed, and failed to build.
+- `disconnect` sends its DISCONNECT before closing the stream. It cancelled
+  the stream at once, which with newer grpc dropped the DISCONNECT, so the
+  server only saw the connection go away.
+
 Works with unitdb v0.4.0 and v0.5.0, which require the server to have an
 encryption key of its own.
 

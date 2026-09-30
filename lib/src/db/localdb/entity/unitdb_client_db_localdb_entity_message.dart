@@ -22,16 +22,18 @@ class Messages extends Table {
 /// Mapping functions for [MessageEntity]
 extension MessageEntityX on MessageEntity {
   /// Maps a [MessageEntity] into [Message]
-  Future<UtpMessage> toMessage() async =>
-      await UtpMessage.read(ByteBuffer.fromList(utpMessage));
+  Future<UtpMessage?> toMessage() async {
+    final m = utpMessage;
+    return m == null ? null : await UtpMessage.read(ByteBuffer.fromList(m));
+  }
 }
 
 /// Mapping functions for [Message]
 extension MessageX on UtpMessage {
   /// Maps a [Message] into [MessageEntity]
-  MessageEntity toEntity({int sessionId}) => MessageEntity(
-        id: getInfo().messageID,
+  MessagesCompanion toEntity({required int sessionId}) => MessagesCompanion.insert(
+        id: Value(getInfo().messageID),
         sessionId: sessionId,
-        utpMessage: Uint8List.fromList(this.encode().readAll()),
+        utpMessage: Value(Uint8List.fromList(this.encode().readAll())),
       );
 }

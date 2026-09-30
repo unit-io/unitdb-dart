@@ -37,3 +37,7 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# A library does not lock its dependencies: apps resolve them, and Dart 2.19
+# and Dart 3 resolve them differently.
+pubspec.lock

@@ -24,35 +24,45 @@ class Options {
 
   static const _defaultWriteTimeout = Duration(seconds: 60);
 
-  List<Uri> servers;
-  String authority;
-  PersistenceStore persistenceStore;
-  String clientID;
-  bool insecureFlag;
-  String username;
-  Uint8List password;
-  String sessionData;
-  bool cleanSession;
+  // The fields are unset (null) until withDefaultOptions() fills in their
+  // defaults. A connection holds the options withDefaultOptions() returned
+  // and reads them through the _resolved getters below, which fall back to
+  // the same defaults.
+  static const _defaultKeepAlive = 60;
+  static const _defaultPingTimeout = Duration(seconds: 60);
+  static const _defaultConnectTimeout = Duration(seconds: 60);
+  static const _defaultMaxReconnectDuration = Duration(minutes: 10);
+  static const _defaultMaxConnectRetryDuration = Duration(seconds: 30);
+
+  List<Uri>? servers;
+  String? authority;
+  PersistenceStore? persistenceStore;
+  String? clientID;
+  bool? insecureFlag;
+  String? username;
+  Uint8List? password;
+  String? sessionData;
+  bool? cleanSession;
   // tls.Config tLSConfig;
-  int keepAlive;
-  int sessionKey;
-  Duration pingTimeout;
-  Duration connectTimeout;
-  Duration maxReconnectDuration;
-  bool autoReconnect;
-  Duration maxConnectRetryDuration;
-  bool connectRetry;
-  String storePath;
-  int storeSize;
-  Duration storeLogReleaseDuration;
-  MessageHandler defaultMessageHandler;
-  OnConnectionHandler onConnectionHandler;
-  ConnectionLostHandler connectionLostHandler;
-  HeartBeatHandler heartBeatHandler;
-  Duration writeTimeout;
-  Duration batchDuration;
-  int batchByteThreshold;
-  int batchCountThreshold;
+  int? keepAlive;
+  int? sessionKey;
+  Duration? pingTimeout;
+  Duration? connectTimeout;
+  Duration? maxReconnectDuration;
+  bool? autoReconnect;
+  Duration? maxConnectRetryDuration;
+  bool? connectRetry;
+  String? storePath;
+  int? storeSize;
+  Duration? storeLogReleaseDuration;
+  MessageHandler? defaultMessageHandler;
+  OnConnectionHandler? onConnectionHandler;
+  ConnectionLostHandler? connectionLostHandler;
+  HeartBeatHandler? heartBeatHandler;
+  Duration? writeTimeout;
+  Duration? batchDuration;
+  int? batchByteThreshold;
+  int? batchCountThreshold;
 
   void addServer(String target) {
     var re = RegExp(r'%(25)?');
@@ -64,8 +74,7 @@ class Options {
     }
     target = target.replaceAll(re, "%25");
     var uri = Uri.parse(target);
-    this.servers = this.servers ?? List<Uri>();
-    this.servers.add(uri);
+    (this.servers ??= <Uri>[]).add(uri);
   }
 
   void setClientID(String clientID) {
@@ -85,13 +94,14 @@ class Options {
     o.password = this.password ?? Uint8List(0);
     o.sessionData = this.sessionData ?? "";
     o.cleanSession = this.cleanSession ?? false;
-    o.keepAlive = this.keepAlive ?? 60;
-    o.pingTimeout = this.pingTimeout ?? Duration(seconds: 60);
-    o.connectTimeout = this.connectTimeout ?? Duration(seconds: 60);
-    o.maxReconnectDuration = this.maxReconnectDuration ?? Duration(minutes: 10);
+    o.keepAlive = this.keepAlive ?? _defaultKeepAlive;
+    o.pingTimeout = this.pingTimeout ?? _defaultPingTimeout;
+    o.connectTimeout = this.connectTimeout ?? _defaultConnectTimeout;
+    o.maxReconnectDuration =
+        this.maxReconnectDuration ?? _defaultMaxReconnectDuration;
     o.autoReconnect = this.autoReconnect ?? true;
     o.maxConnectRetryDuration =
-        this.maxConnectRetryDuration ?? Duration(seconds: 30);
+        this.maxConnectRetryDuration ?? _defaultMaxConnectRetryDuration;
     o.connectRetry = this.connectRetry ?? false;
     o.sessionKey = this.sessionKey ?? 0;
     o.writeTimeout =
@@ -102,7 +112,7 @@ class Options {
     o.heartBeatHandler = this.heartBeatHandler;
     o.storePath = this.storePath ?? "/tmp/uniteb";
     o.storeSize = this.storeSize ?? 1 << 27;
-    if (o.writeTimeout.inSeconds > 0) {
+    if (o._resolvedWriteTimeout.inSeconds > 0) {
       o.storeLogReleaseDuration =
           this.storeLogReleaseDuration ?? o.writeTimeout;
     } else {
@@ -116,6 +126,24 @@ class Options {
     o.batchCountThreshold = this.batchCountThreshold ?? 1000;
     return o;
   }
+
+  List<Uri> get _resolvedServers => servers ?? const <Uri>[];
+  String get _resolvedAuthority => authority ?? '';
+  bool get _resolvedInsecureFlag => insecureFlag ?? false;
+  String get _resolvedUsername => username ?? "";
+  Uint8List get _resolvedPassword => password ?? Uint8List(0);
+  bool get _resolvedCleanSession => cleanSession ?? false;
+  int get _resolvedKeepAlive => keepAlive ?? _defaultKeepAlive;
+  Duration get _resolvedPingTimeout => pingTimeout ?? _defaultPingTimeout;
+  Duration get _resolvedConnectTimeout =>
+      connectTimeout ?? _defaultConnectTimeout;
+  Duration get _resolvedMaxReconnectDuration =>
+      maxReconnectDuration ?? _defaultMaxReconnectDuration;
+  bool get _resolvedAutoReconnect => autoReconnect ?? true;
+  Duration get _resolvedMaxConnectRetryDuration =>
+      maxConnectRetryDuration ?? _defaultMaxConnectRetryDuration;
+  bool get _resolvedConnectRetry => connectRetry ?? false;
+  Duration get _resolvedWriteTimeout => writeTimeout ?? _defaultWriteTimeout;
 
   /// WithAuthority returns an Option which makes client connection and set Authority
   Options withAuthority(String authority) {

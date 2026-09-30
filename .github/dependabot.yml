@@ -9,7 +9,7 @@ updates:
     groups:
       pub-dependencies:
         patterns: ["*"]
-    # Major versions need a null-safe package, and Dart 3: not yet.
+    # Major versions need Dart 3, above the SDK floor.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

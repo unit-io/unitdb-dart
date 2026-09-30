@@ -3,18 +3,18 @@ part of unitdb_client;
 class RelayRequest {
   RelayRequest(String topic, String last,
       {@Deprecated('the server protocol has no relay tags; they are not sent')
-          Map<String, String> tags}) {
+          Map<String, String>? tags}) {
     this._topic = topic;
     this._tags = tags;
     this._last = last;
   }
-  String _topic;
-  Map<String, String> _tags;
-  String _last;
+  late String _topic;
+  Map<String, String>? _tags;
+  late String _last;
 
   String get topic => _topic;
   @Deprecated('the server protocol has no relay tags; they are not sent')
-  Map<String, String> get tags => _tags;
+  Map<String, String>? get tags => _tags;
   String get last => _last;
 }
 
@@ -24,8 +24,8 @@ class Relay implements UtpMessage {
     this._requests = requests;
   }
 
-  int _messageID;
-  List<RelayRequest> _requests;
+  late int _messageID;
+  late List<RelayRequest> _requests;
 
   List<RelayRequest> get requests => _requests;
 

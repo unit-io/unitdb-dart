@@ -14,7 +14,7 @@ class MessageCommand extends DatabaseAccessor<LocalDb>
 
   Future<void> putMessage(int sessionId, UtpMessage message) =>
       transaction(() async {
-        return into(messages)
+        await into(messages)
             .insertOnConflictUpdate(message.toEntity(sessionId: sessionId));
       });
 

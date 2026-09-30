@@ -7,9 +7,9 @@ class Subscription {
     this._deliveryMode = deliveryMode;
     this._delay = delay;
   }
-  String _topic;
-  DeliveryMode _deliveryMode;
-  int _delay;
+  late String _topic;
+  late DeliveryMode _deliveryMode;
+  late int _delay;
 
   String get topic => _topic;
   int get deliveryMode => _deliveryMode.index;
@@ -21,8 +21,8 @@ class Subscribe implements UtpMessage {
     this._messageID = messageID;
     this._subscriptions = subs;
   }
-  int _messageID;
-  List<Subscription> _subscriptions;
+  late int _messageID;
+  late List<Subscription> _subscriptions;
 
   /// type returns the Message type.
   MessageType type() {
@@ -62,8 +62,8 @@ class Unsubscribe implements UtpMessage {
     this._messageID = messageID;
     this._subscriptions = subs;
   }
-  int _messageID;
-  List<Subscription> _subscriptions;
+  late int _messageID;
+  late List<Subscription> _subscriptions;
 
   /// type returns the Message type.
   MessageType type() {

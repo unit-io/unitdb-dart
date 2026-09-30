@@ -37,12 +37,12 @@ class TopicFilter extends Topic {
 
   final Stream<List<Message>> _changes;
 
-  StreamController<List<Message>> _updates;
+  late StreamController<List<Message>> _updates;
 
   Stream<List<Message>> get messageStream => _updates.stream;
 
   void _filter(List<Message> e) {
-    String lastTopic;
+    String? lastTopic;
 
     try {
       final msgs = <Message>[];

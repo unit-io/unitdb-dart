@@ -1,21 +1,21 @@
 part of unitdb_web_client;
 
 class WebsocketConnectionHandler {
-  WebSocket _serverConn;
+  WebSocket? _serverConn;
 
-  StreamQueue<MessageEvent> inPacket;
+  StreamQueue<MessageEvent>? inPacket;
 
   /// InMsg is the type to use for reading request data from the streaming
   /// endpoint. This must be a non-nil allocated value and must NOT point to
   /// the same value as OutMsg since they may be used concurrently.
   ///
   /// The Reset method will be called on InMsg during Reads so data you
-  /// set initially will be lost.
-  ByteBuffer inMsg;
+  /// set initially will be lost. Set by newConnection.
+  late ByteBuffer inMsg;
 
   /// readOffset tracks where we've read up to if we're reading a result
   /// that didn't fully fit into the target slice. See Read.
-  int readOffset;
+  int readOffset = 0;
 
   Future<bool> newConnection(Uri uri, Duration timeout,
       {String authority = ""}) {
@@ -24,18 +24,20 @@ class WebsocketConnectionHandler {
     this.inMsg = ByteBuffer(typed.Uint8Buffer());
 
     print(uri.toString());
-    this._serverConn = WebSocket(uri.toString());
-    this._serverConn.binaryType = 'arraybuffer';
-    var closeEvents;
-    var errorEvents;
-    this._serverConn.onOpen.listen((e) {
+    final serverConn = WebSocket(uri.toString());
+    this._serverConn = serverConn;
+    serverConn.binaryType = 'arraybuffer';
+    // Set before any of the socket's events, which cancel them, arrive.
+    late StreamSubscription closeEvents;
+    late StreamSubscription errorEvents;
+    serverConn.onOpen.listen((e) {
       closeEvents.cancel();
       errorEvents.cancel();
-      _startListening();
-      return r.completer.complete();
+      _startListening(serverConn);
+      return r.completer.complete(true);
     });
 
-    closeEvents = this._serverConn.onClose.listen((e) {
+    closeEvents = serverConn.onClose.listen((e) {
       print('WebsocketConnectionHandler::newConnection - websocket is closed');
       closeEvents.cancel();
       errorEvents.cancel();
@@ -43,7 +45,7 @@ class WebsocketConnectionHandler {
           'WebsocketConnectionHandler::newConnection - websocket is closed');
     });
 
-    errorEvents = this._serverConn.onError.listen((e) {
+    errorEvents = serverConn.onError.listen((e) {
       print(
           'WebsocketConnectionHandler::newConnection - websocket has erred $e');
       closeEvents.cancel();
@@ -59,7 +61,7 @@ class WebsocketConnectionHandler {
 
   Future<bool> hasNext() {
     final nextCompleter = Completer<bool>();
-    inPacket.hasNext
+    _packets('hasNext').hasNext
         .then((value) => nextCompleter.complete(value))
         .catchError((e) {
       final message =
@@ -73,12 +75,10 @@ class WebsocketConnectionHandler {
 
   Future<bool> next(Duration timeout) async {
     final nextCompleter = Completer<bool>();
-    await inPacket.next.timeout(timeout, onTimeout: () {
-      nextCompleter.complete(false);
-      return;
-    }).then((message) {
+    // A timeout fails the read.
+    await _packets('next').next.timeout(timeout).then((message) {
       inMsg.writeList(Uint8List.view(message.data));
-      nextCompleter.complete();
+      nextCompleter.complete(true);
     }).catchError((e) {
       final error =
           'WebsocketConnectionHandler::read - error occured ${e.toString()}';
@@ -87,6 +87,16 @@ class WebsocketConnectionHandler {
     });
 
     return nextCompleter.future;
+  }
+
+  /// _packets returns the incoming packets; there are none once closed.
+  StreamQueue<MessageEvent> _packets(String caller) {
+    final packets = inPacket;
+    if (packets == null) {
+      throw NoConnectionException(
+          'WebsocketConnectionHandler::$caller - closed');
+    }
+    return packets;
   }
 
   /// read implements stream reader.
@@ -144,22 +154,23 @@ class WebsocketConnectionHandler {
   /// This calls CloseSend underneath for clients, so read the documentation
   /// for that to understand the semantics of this call.
   void close() {
-    if (_serverConn != null) {
-      _serverConn.close();
+    final serverConn = _serverConn;
+    if (serverConn != null) {
+      serverConn.close();
       _serverConn = null;
       inPacket?.cancel();
       inPacket = null;
     }
   }
 
-  void _startListening() {
+  void _startListening(WebSocket serverConn) {
     print('startlistening');
-    this.inPacket = StreamQueue<MessageEvent>(_serverConn.onMessage);
-    _serverConn.onClose.listen((e) {
+    this.inPacket = StreamQueue<MessageEvent>(serverConn.onMessage);
+    serverConn.onClose.listen((e) {
       print('WebsocketConnectionHandler::newConnection - onClose ${e.reason}');
       close();
     });
-    _serverConn.onError.listen((e) {
+    serverConn.onError.listen((e) {
       print(
           'WebsocketConnectionHandler::newConnection - onError ${e.toString()}');
       close();

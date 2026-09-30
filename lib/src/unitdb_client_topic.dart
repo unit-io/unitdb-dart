@@ -29,8 +29,8 @@ abstract class Topic {
 
   String topic;
 
-  /// Topic parts
-  List<String> topicParts;
+  /// Topic parts, set by parseTopic in the constructor.
+  late List<String> topicParts;
 
   void parseTopic() {
     // Strip a "<key>/" prefix; the topic is everything after the first

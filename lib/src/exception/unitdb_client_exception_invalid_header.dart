@@ -5,7 +5,7 @@ class InvalidHaderException implements Exception {
     _message = 'unitdb_client::InvalidHeaderException:$txt';
   }
 
-  String _message;
+  late String _message;
 
   @override
   String toString() => _message;

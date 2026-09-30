@@ -6,9 +6,9 @@ class PublishMessage {
     this._payload = payload;
     this._ttl = ttl;
   }
-  String _topic;
-  Uint8List _payload;
-  String _ttl;
+  late String _topic;
+  late Uint8List _payload;
+  late String _ttl;
 
   String get topic => _topic;
   Uint8List get payload => _payload;
@@ -22,9 +22,9 @@ class Publish implements UtpMessage {
     this._messages = messages;
     this._deliveryMode = deliveryMode;
   }
-  int _messageID;
-  DeliveryMode _deliveryMode;
-  List<PublishMessage> _messages;
+  late int _messageID;
+  late DeliveryMode _deliveryMode;
+  late List<PublishMessage> _messages;
 
   List<PublishMessage> get messages => _messages;
 
@@ -67,7 +67,8 @@ class Publish implements UtpMessage {
 
     List<PublishMessage> messages = [];
     for (var message in pub.messages) {
-      messages.add(PublishMessage(message.topic, message.payload, message.ttl));
+      messages.add(PublishMessage(
+          message.topic, message.payload as Uint8List, message.ttl));
     }
 
     return Publish(pub.messageID, messages,

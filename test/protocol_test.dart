@@ -37,13 +37,13 @@ class Frame {
     header = pbx.FixedHeader.fromBuffer(bytes.sublist(i, i + len));
     body = bytes.sublist(i + len);
   }
-  pbx.FixedHeader header;
-  List<int> body;
+  late pbx.FixedHeader header;
+  late List<int> body;
 }
 
 List<int> bytesOf(UtpMessage m) => m.encode().buffer.toList();
 
-Future<UtpMessage> roundTrip(UtpMessage m) => UtpMessage.read(BytesReader(bytesOf(m)));
+Future<UtpMessage?> roundTrip(UtpMessage m) => UtpMessage.read(BytesReader(bytesOf(m)));
 
 Uint8List bytes(String s) => Uint8List.fromList(utf8.encode(s));
 
@@ -103,8 +103,8 @@ void main() {
     });
 
     test('keeps the delivery mode when decoded', () async {
-      final p = await roundTrip(
-          Publish(1, [PublishMessage('a', bytes('x'), '')], DeliveryMode.batch));
+      final p = (await roundTrip(
+          Publish(1, [PublishMessage('a', bytes('x'), '')], DeliveryMode.batch)))!;
       expect(p.getInfo().deliveryMode, DeliveryMode.batch.index);
     });
 
@@ -186,7 +186,7 @@ void main() {
   });
 
   group('Connect', () {
-    Uri uri(String s) => (Options()..addServer(s)).servers.single;
+    Uri uri(String s) => (Options()..addServer(s)).servers!.single;
     pbx.Connect encode(Options o, [String server = ':6080']) =>
         pbx.Connect.fromBuffer(Frame(bytesOf(
                 Connect.withOptions(o.withDefaultOptions()..clientID = 'CID', uri(server))))

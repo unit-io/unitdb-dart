@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data' hide ByteBuffer;
 import 'package:unitdb_client/unitdb_client.dart';
 
 class Result {
@@ -10,11 +11,11 @@ class Result {
       this.messageID,
       this.errorMessage});
 
-  int returnCode;
-  bool sessionPresent;
-  int messageID;
+  int? returnCode;
+  bool? sessionPresent;
+  int? messageID;
 
-  String errorMessage;
+  String? errorMessage;
 }
 
 class TestClient {
@@ -24,16 +25,16 @@ class TestClient {
 
   String server;
 
-  dynamic dbclient;
+  late dynamic dbclient;
 
   static const _defaultServer = '127.0.0.1:6080';
 
   final opts =
       Options().withKeepAlive(30).withPingTimeout(Duration(seconds: 10));
 
-  Future<Result> connect() async {
+  Future<Result?> connect() async {
     dbclient = Client(server, clientID, opts);
-    Result result;
+    Result? result;
 
     _connectCompleter = Completer();
     try {
@@ -47,7 +48,7 @@ class TestClient {
     return result;
   }
 
-  Completer<Result> _connectCompleter;
+  late Completer<Result> _connectCompleter;
 }
 
 MessageHandler onMessage = (dynamic client, Stream<Message> msgStream) {
@@ -104,14 +105,14 @@ void main() async {
   for (var i = 0; i < 3; i++) {
     var msg = "Hi msg #${i}!";
     await client.publish(
-        "groups.private.673651407196578720.message", utf8.encode(msg),
+        "groups.private.673651407196578720.message", Uint8List.fromList(utf8.encode(msg)),
         deliveryMode: DeliveryMode.express);
   }
 
   for (var i = 0; i < 3; i++) {
     var msg = "Hi notification #${i}!";
     await client.publish(
-        "groups.private.673651407196578720.1.notification", utf8.encode(msg),
+        "groups.private.673651407196578720.1.notification", Uint8List.fromList(utf8.encode(msg)),
         deliveryMode: DeliveryMode.express);
   }
 

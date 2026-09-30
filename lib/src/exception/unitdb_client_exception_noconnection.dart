@@ -5,7 +5,7 @@ class NoConnectionException implements Exception {
     _message = 'unitdb_client::NoConnectionException:$txt';
   }
 
-  String _message;
+  late String _message;
 
   @override
   String toString() => _message;

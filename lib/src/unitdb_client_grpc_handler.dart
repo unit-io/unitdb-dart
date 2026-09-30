@@ -2,26 +2,26 @@ part of unitdb_client;
 
 class FixedConnectionClientChannel extends ClientChannelBase {
   final Http2ClientConnection clientConnection;
-  List<ConnectionState> states = <ConnectionState>[];
-  FixedConnectionClientChannel(this.clientConnection) {
-    clientConnection.onStateChanged = (c) => states.add(c.state);
-  }
+  FixedConnectionClientChannel(this.clientConnection);
 
   @override
   ClientConnection createConnection() => clientConnection;
 }
 
 class GrpcConnectionHandler {
-  FixedConnectionClientChannel _channel;
-  UnitdbClient _serverConn;
+  late FixedConnectionClientChannel _channel;
+  UnitdbClient? _serverConn;
 
-  ResponseStream<pbx.Packet> stream;
-  StreamQueue<pbx.Packet> inPacket;
-  StreamController<pbx.Packet> outPacket;
+  ResponseStream<pbx.Packet>? stream;
+  StreamQueue<pbx.Packet>? inPacket;
+  StreamController<pbx.Packet>? outPacket;
+
+  /// ended completes when the server ends the stream.
+  Completer<void> _ended = Completer<void>();
 
   /// readOffset tracks where we've read up to if we're reading a result
   /// that didn't fully fit into the target slice. See Read.
-  int readOffset;
+  int readOffset = 0;
 
   Future<bool> newConnection(Uri uri, Duration timeout,
       {String authority = ""}) async {
@@ -37,21 +37,31 @@ class GrpcConnectionHandler {
         ),
       ));
 
-      this._serverConn = UnitdbClient(this._channel);
-      outPacket = StreamController<pbx.Packet>();
-      this.stream = _serverConn.stream(outPacket.stream);
-      this.stream.handleError((e) {
+      final serverConn = UnitdbClient(this._channel);
+      this._serverConn = serverConn;
+      final out = StreamController<pbx.Packet>();
+      outPacket = out;
+      final stream = serverConn.stream(out.stream);
+      this.stream = stream;
+      stream.handleError((e) {
         final message =
             'GrpcConnectionHandler::Connection error ${e.toString()}';
         print(message);
         close();
         r.completer.completeError(message);
       });
-      this.inPacket = StreamQueue<pbx.Packet>(this.stream);
+      final ended = Completer<void>();
+      _ended = ended;
+      this.inPacket = StreamQueue<pbx.Packet>(stream.transform(
+          StreamTransformer<pbx.Packet, pbx.Packet>.fromHandlers(
+              handleDone: (sink) {
+        if (!ended.isCompleted) ended.complete();
+        sink.close();
+      })));
       this
           ._channel
           .getConnection()
-          .then((connection) => r.completer.complete());
+          .then((connection) => r.completer.complete(true));
     } on Exception {
       final message =
           'GrpcConnectionHandler::newConnection - The connection to the unite messaging server ${uri.host}:${uri.port} could not be made.';
@@ -73,7 +83,7 @@ class GrpcConnectionHandler {
 
   Future<bool> hasNext() {
     final nextCompleter = Completer<bool>();
-    inPacket.hasNext
+    _packets('hasNext').hasNext
         .then((value) => nextCompleter.complete(value))
         .catchError((e) {
       final message =
@@ -87,12 +97,10 @@ class GrpcConnectionHandler {
 
   Future<bool> next(Duration timeout) async {
     final nextCompleter = Completer<bool>();
-    await inPacket.next.timeout(timeout, onTimeout: () {
-      nextCompleter.complete(false);
-      return;
-    }).then((message) {
+    // A timeout fails the read.
+    await _packets('next').next.timeout(timeout).then((message) {
       inMsg.writeList(message.data);
-      nextCompleter.complete();
+      nextCompleter.complete(true);
     }).catchError((e) {
       final error =
           'GrpcConnectionHandler::read - error occured ${e.toString()}';
@@ -100,6 +108,15 @@ class GrpcConnectionHandler {
       nextCompleter.completeError(error);
     });
     return nextCompleter.future;
+  }
+
+  /// _packets returns the incoming packets; there are none once closed.
+  StreamQueue<pbx.Packet> _packets(String caller) {
+    final packets = inPacket;
+    if (packets == null) {
+      throw NoConnectionException('GrpcConnectionHandler::$caller - closed');
+    }
+    return packets;
   }
 
   /// read implements stream reader.
@@ -133,13 +150,14 @@ class GrpcConnectionHandler {
   Future<int> write(ByteBuffer p) async {
     var total = p.length;
     do {
-      if (outPacket == null || outPacket.isClosed) {
+      final out = outPacket;
+      if (out == null || out.isClosed) {
         return 0;
       }
       // Write our data into the request. Any error means we abort.
       final packet = pbx.Packet();
       packet.data = p.read(p.length);
-      outPacket?.sink?.add(packet);
+      out.sink.add(packet);
 
       // We sent partial data so we continue writing the remainder
     } while (total == p.availableBytes);
@@ -161,16 +179,29 @@ class GrpcConnectionHandler {
   ///
   /// This calls CloseSend underneath for clients, so read the documentation
   /// for that to understand the semantics of this call.
+  /// closeGracefully ends the stream from this end, so that what was written
+  /// reaches the server first, such as a DISCONNECT, and waits up to timeout
+  /// for the server to end it, then closes. Cancelling the stream at once
+  /// could drop the last writes.
+  Future<void> closeGracefully(Duration timeout) async {
+    final out = outPacket;
+    if (_serverConn != null && out != null && !out.isClosed) {
+      unawaited(out.close());
+      await _ended.future.timeout(timeout, onTimeout: () {});
+    }
+    close();
+  }
+
   void close() {
     if (_serverConn != null) {
       print('close called');
       _channel.shutdown();
       _serverConn = null;
-      outPacket.close();
+      outPacket?.close();
       outPacket = null;
-      inPacket.cancel();
+      inPacket?.cancel();
       inPacket = null;
-      stream.cancel();
+      stream?.cancel();
       stream = null;
     }
   }

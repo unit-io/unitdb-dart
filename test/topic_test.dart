@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data' hide ByteBuffer;
 
 import 'package:test/test.dart';
 import 'package:unitdb_client/unitdb_client.dart';
@@ -113,7 +114,7 @@ void main() {
       f.messageStream.listen((msgs) => got.addAll(msgs.map((m) => m.topic)));
 
       Message msg(String topic) => Message.messageFromPublish(
-          1, PublishMessage(topic, null, ''), () {});
+          1, PublishMessage(topic, Uint8List(0), ''), () {});
       changes.add([msg('groups.a.message'), msg('groups.b.other'), msg('groups.c.message')]);
       await Future<void>.delayed(Duration.zero);
 

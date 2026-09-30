@@ -100,7 +100,7 @@ void main() {
   });
 
   group('Options.addServer', () {
-    Uri server(String target) => (Options()..addServer(target)).servers.single;
+    Uri server(String target) => (Options()..addServer(target)).servers!.single;
 
     test('defaults the scheme to grpc', () {
       final uri = server('localhost:6080');
@@ -127,7 +127,7 @@ void main() {
       final o = Options()
         ..addServer(':1')
         ..addServer(':2');
-      expect(o.servers.map((u) => u.port), [1, 2]);
+      expect(o.servers!.map((u) => u.port), [1, 2]);
     });
   });
 }
