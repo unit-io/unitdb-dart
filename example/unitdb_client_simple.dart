@@ -66,6 +66,8 @@ ConnectionLostHandler onConnectionLost = () {
 void main() async {
   var opts = Options();
   opts
+      // unitdb v0.6.0 and later refuse the insecure flag unless the server's
+      // unitdb.conf sets "allow_insecure": true (development only).
       .withInsecure()
       .withKeepAlive(30)
       .withPingTimeout(Duration(seconds: 10))

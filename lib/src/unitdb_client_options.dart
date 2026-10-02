@@ -166,6 +166,13 @@ class Options {
   /// WithInsecure returns an Option which makes client connection
   /// with insecure flag so that client can provide topic with key prefix.
   /// Use insecure flag only for test and debug connection and not for live client.
+  ///
+  /// Since unitdb v0.6.0 the server refuses a client that connects with the
+  /// insecure flag, with Connect Return Code 4 (the server's Unauthorized),
+  /// unless its config sets `"allow_insecure": true`, which only a standalone
+  /// server honors, for development. Clients publish and subscribe with topic
+  /// keys instead, and a trusted backend connects with a service client ID
+  /// (minted by the server's `cmd/mintid -service`), which needs no keys.
   Options withInsecure() {
     this.insecureFlag = true;
     return this;
