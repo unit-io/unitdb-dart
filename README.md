@@ -11,6 +11,10 @@ To build [unitdb](https://github.com/unit-io/unitdb) from source code use go get
 
 The server needs an encryption key of its own: set `encryption_config`'s `key` in unitdb.conf, or the `UNITDB_ENCRYPTION_KEY` environment variable, to 32 random characters, for example the output of `openssl rand -base64 24`. Client IDs are signed with it, so clients need IDs issued by that server.
 
+Clients publish and subscribe with topic keys, which a primary client generates with a `unitdb/keygen` request. Since unitdb v0.6.0 the server refuses a client that connects with `withInsecure()` (Connect Return Code 4), unless its unitdb.conf sets `"allow_insecure": true`, which is for development only and which a cluster node refuses to start with. A trusted backend needs no topic keys either: give it a service client ID, which the server's `mintid` command issues (`go run ./server/cmd/mintid -config server/unitdb.conf -contract <contract> -service`). Keep service IDs on servers, never on clients or devices.
+
+Topics whose first part starts with `$` are reserved for the server, and a session belongs to the client ID that started it.
+
 ### Usage
 Make use of the client by importing the packet to your Flutter or Dart project. For example,
 

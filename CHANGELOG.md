@@ -1,5 +1,17 @@
 ## Unreleased
 
+### unitdb v0.6.0 (security stage 1)
+
+- Since unitdb v0.6.0, the server refuses a client that connects with
+  `withInsecure()`: `connect` fails, with return code 4, unless the server's
+  config sets `"allow_insecure": true`, for development, on a standalone
+  server. Use topic keys, or a service client ID for a trusted backend
+  (`mintid -service`), instead. `withInsecure`'s documentation and the README
+  say so.
+- The Go-server tests run their server with `allow_insecure`, and a new test
+  checks that a server without it refuses an insecure client (skipped against
+  a server source that predates `allow_insecure`).
+
 ### Null safety
 
 - The package is null safe, and runs on Dart 3, Flutter 3.10 and later

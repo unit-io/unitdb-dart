@@ -43,6 +43,37 @@ Future<String> newClientID(int grpcPort) async {
   }
 }
 
+/// connackReturnCode sends the server a CONNECT, and returns the return code
+/// of the CONNACK it answers with.
+Future<int> connackReturnCode(int grpcPort, String clientID,
+    {bool insecure = false}) async {
+  final channel = ClientChannel('127.0.0.1',
+      port: grpcPort,
+      options: const ChannelOptions(credentials: ChannelCredentials.insecure()));
+  final out = StreamController<pbx.Packet>();
+  try {
+    final connect = pbx.Connect()
+      ..keepAlive = 30
+      ..clientID = clientID
+      ..insecureFlag = insecure;
+    out.add(pbx.Packet()
+      ..data = Frame.encode(
+          pbx.MessageType.CONNECT, pbx.FlowControl.NONE, connect.writeToBuffer()));
+    final replies = pbgrpc.UnitdbClient(channel).stream(out.stream);
+    await for (final packet in replies.timeout(const Duration(seconds: 10))) {
+      final f = Frame.parse(packet.data);
+      if (f.type == pbx.MessageType.CONNECT &&
+          f.flow == pbx.FlowControl.ACKNOWLEDGE) {
+        return pbx.ConnectAcknowledge.fromBuffer(f.body).returnCode;
+      }
+    }
+    throw StateError('the server sent no CONNACK');
+  } finally {
+    await out.close();
+    await channel.shutdown();
+  }
+}
+
 Future<int> freePort() async {
   final s = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
   final port = s.port;
@@ -50,7 +81,28 @@ Future<int> freePort() async {
   return port;
 }
 
+/// serverDir is the server's main package: UNITDB_SERVER_DIR, or
+/// ../unitdb/server next to this repository.
+String serverDir() =>
+    Platform.environment['UNITDB_SERVER_DIR'] ??
+    '${Directory.current.parent.path}/unitdb/server';
+
+/// serverRefusesInsecure tells whether the server source is unitdb v0.6.0 or
+/// later, which refuses a CONNECT's insecure flag unless its config sets
+/// allow_insecure. Earlier servers accept the flag, and ignore the setting.
+bool serverRefusesInsecure() {
+  final config = File('${serverDir()}/internal/config/config.go');
+  return config.existsSync() &&
+      config.readAsStringSync().contains('"allow_insecure"');
+}
+
 class GoServer {
+  /// allowInsecure sets the server's allow_insecure, so that it accepts
+  /// clients that connect with the insecure flag (withInsecure), as the
+  /// tests' clients do. Without it, unitdb v0.6.0 and later refuse them.
+  GoServer({this.allowInsecure = true});
+
+  final bool allowInsecure;
   Process? process;
   // grpcPort, tcpPort and dir are set with bin, by the first start.
   late int grpcPort;
@@ -63,8 +115,7 @@ class GoServer {
   Future<void> start() async {
     var bin = this.bin;
     if (bin == null) {
-      final src = Platform.environment['UNITDB_SERVER_DIR'] ??
-          '${Directory.current.parent.path}/unitdb/server';
+      final src = serverDir();
       dir = await Directory.systemTemp.createTemp('unitdb-dart-e2e');
       bin = this.bin = '${dir.path}/unitdb-server';
       final build =
@@ -79,6 +130,8 @@ class GoServer {
         'grpc_listen': '127.0.0.1:$grpcPort',
         'logging_level': 'Error',
         'encryption_config': {'key': serverKey, 'identifier': 'local', 'sealed': false},
+        // Honored standalone only, as here; servers before v0.6.0 ignore it.
+        'allow_insecure': allowInsecure,
         'cluster_config': {'self': ''},
         'store_config': {
           'reset': false,
