@@ -103,6 +103,16 @@ class MockServer extends UnitdbServiceBase {
   /// When false, the server never answers PINGREQ.
   bool answerPings = true;
 
+  /// A client ID to send the next client that connects, after an accepted
+  /// CONNACK, on unitdb/clientid/, as the server renews a client's ID. It is
+  /// sent once.
+  String? renewClientID;
+
+  /// Answers a publish to an API topic (unitdb/<name>) with the payload it
+  /// returns, on the same topic; null answers nothing. Without it, API
+  /// requests are acknowledged only.
+  List<int>? Function(String topic, List<int> payload)? answerApi;
+
   final sessions = <MockSession>[];
   final stored = <StoredMessage>[];
   final _events = StreamController<Frame>.broadcast();
@@ -157,6 +167,11 @@ class MockServer extends UnitdbServiceBase {
                   ..epoch = 1
                   ..connID = s.id)
                 .writeToBuffer());
+        final renewed = renewClientID;
+        if (connectReturnCode == 0 && renewed != null) {
+          renewClientID = null;
+          s.deliver('unitdb/clientid/', renewed.codeUnits, 0);
+        }
         break;
       case pbx.MessageType.SUBSCRIBE:
         final sub = pbx.Subscribe.fromBuffer(f.body);
@@ -176,6 +191,11 @@ class MockServer extends UnitdbServiceBase {
         final pub = pbx.Publish.fromBuffer(f.body);
         s.ack(pbx.MessageType.PUBLISH, pub.messageID);
         for (final m in pub.messages) {
+          if (m.topic.startsWith('unitdb/')) {
+            final answer = answerApi?.call(m.topic, m.payload);
+            if (answer != null) s.deliver(m.topic, answer, 0);
+            continue;
+          }
           stored.add(StoredMessage(m.topic, m.payload));
           for (final other in sessions) {
             final mode = _match(other.subscriptions, m.topic);

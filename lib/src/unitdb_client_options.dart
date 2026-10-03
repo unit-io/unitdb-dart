@@ -17,6 +17,10 @@ typedef ConnectionLostHandler = void Function();
 /// Can be used for health monitoring outside of the client itself.
 typedef HeartBeatHandler = void Function();
 
+/// ClientIdHandler is a callback that is called with the client ID the
+/// server renewed the client's with (see Options.withClientIdHandler).
+typedef ClientIdHandler = void Function(String clientId);
+
 enum PersistenceStore { None, Memory, Localdb }
 
 class Options {
@@ -59,6 +63,7 @@ class Options {
   OnConnectionHandler? onConnectionHandler;
   ConnectionLostHandler? connectionLostHandler;
   HeartBeatHandler? heartBeatHandler;
+  ClientIdHandler? clientIdHandler;
   Duration? writeTimeout;
   Duration? batchDuration;
   int? batchByteThreshold;
@@ -110,6 +115,7 @@ class Options {
     o.defaultMessageHandler = this.defaultMessageHandler;
     o.connectionLostHandler = this.connectionLostHandler;
     o.heartBeatHandler = this.heartBeatHandler;
+    o.clientIdHandler = this.clientIdHandler;
     o.storePath = this.storePath ?? "/tmp/uniteb";
     o.storeSize = this.storeSize ?? 1 << 27;
     if (o._resolvedWriteTimeout.inSeconds > 0) {
@@ -168,11 +174,13 @@ class Options {
   /// Use insecure flag only for test and debug connection and not for live client.
   ///
   /// Since unitdb v0.6.0 the server refuses a client that connects with the
-  /// insecure flag, with Connect Return Code 4 (the server's Unauthorized),
+  /// insecure flag, with Connect Return Code 4,
+  /// ConnectReturnCode.ErrNotAuthorized,
   /// unless its config sets `"allow_insecure": true`, which only a standalone
   /// server honors, for development. Clients publish and subscribe with topic
   /// keys instead, and a trusted backend connects with a service client ID
-  /// (minted by the server's `cmd/mintid -service`), which needs no keys.
+  /// (minted by the server's `cmd/mintid -service`), which needs no keys,
+  /// or vouches with it for a connection it opens (Connection.vouch).
   Options withInsecure() {
     this.insecureFlag = true;
     return this;
@@ -319,6 +327,31 @@ class Options {
   /// Can be used for health monitoring outside of the client itself.
   Options withHeartBeatHandler(HeartBeatHandler handler) {
     this.heartBeatHandler = handler;
+    return this;
+  }
+
+  /// WithClientIdHandler sets a handler to be called with the client ID the
+  /// server renewed the client's with, for the application to keep it, and
+  /// connect with it from then on.
+  ///
+  /// After a client connects, the server (unitdb v0.6.0 and later) may send
+  /// it its client ID sealed again, on `unitdb/clientid/`: when it connected
+  /// with a v1 ID, with a v2 one sealed with a key being retired, or with
+  /// one past 80% of its lifetime (the server's `client_id_ttl` or
+  /// `primary_id_ttl`). It is the same ID: the same contract, permissions
+  /// and sessions, with a new expiry. The client takes it whether or not a
+  /// handler is set: it connects with it from then on, reconnects included,
+  /// and Connection.clientId returns it. Its local store, kept by user name,
+  /// and its session on the server, are kept. But an application that does
+  /// not keep the new ID connects with the old one the next time it starts,
+  /// and once that one expires the server refuses it, with
+  /// ConnectReturnCode.ErrRefusedIDRejected.
+  ///
+  /// The handler runs on the client's read loop: keep it short, and start
+  /// any slow work, such as writing the ID to storage, without waiting for
+  /// it.
+  Options withClientIdHandler(ClientIdHandler handler) {
+    this.clientIdHandler = handler;
     return this;
   }
 

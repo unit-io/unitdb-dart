@@ -56,6 +56,10 @@ class ConnectionHandler {
   /// it is connected or their write timeout passes.
   final _pending = <MessageAndResult>[];
 
+  /// _apiRequests holds the API requests waiting for the server's answer,
+  /// by the topic it answers on, in the order they were sent.
+  final _apiRequests = <String, List<_ApiRequest>>{};
+
   final send = StreamController<MessageAndResult>();
 
   final pub = StreamController<Publish>();
@@ -88,7 +92,8 @@ class ConnectionHandler {
     if (next) {
       return _verifyCONNACK();
     }
-    return ConnectReturnCode.ErrRefusedServerUnavailable.index;
+    // The connection closed before a CONNACK.
+    return ConnectReturnCode.ErrServerUnavailable.index;
   }
 
   /// This function is only used for receiving a connack
@@ -187,7 +192,9 @@ class ConnectionHandler {
         }
         break;
       case MessageType.PUBLISH:
-        pub.sink.add(msg as Publish);
+        final p = msg as Publish;
+        _conn._onServerPublish(p);
+        pub.sink.add(p);
         break;
       case MessageType.DISCONNECT:
         _conn.serverDisconnect();

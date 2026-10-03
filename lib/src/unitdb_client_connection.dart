@@ -4,6 +4,12 @@ part of unitdb_client;
 /// MasterContract contract is default contract used for topics if client program does not specify Contract in the request
 const MasterContract = 3376684800;
 
+/// clientIdTopic is the topic the server sends a client a client ID on: a
+/// renewed one after it connected (see Options.withClientIdHandler), or a
+/// new one when it connected without one, or with one the server cannot
+/// open.
+const clientIdTopic = 'unitdb/clientid/';
+
 class Connection with ConnectionHandler {
   Connection(String target, String clientID, Options opts) {
     // set default options
@@ -21,6 +27,11 @@ class Connection with ConnectionHandler {
 
   /// The stream on which all subscribed topic messages are published to.
   Stream<List<Message>> get messageStream => eventChannel.changes;
+
+  /// The client ID the client connects with: the one it was made with, or
+  /// the one the server renewed it with since (see
+  /// Options.withClientIdHandler).
+  String get clientId => _opts.clientID ?? '';
 
   void cancelTimer() {
     _keepAliveTimer?.cancel();
@@ -88,8 +99,8 @@ class Connection with ConnectionHandler {
     while (true) {
       try {
         var rc = await _attemptConnection();
-        r.returnCode = rc.index;
-        if (rc != ConnectReturnCode.Accepted) {
+        r.returnCode = rc;
+        if (rc != ConnectReturnCode.Accepted.index) {
           if (_opts._resolvedConnectRetry) {
             await Future.delayed(sleep);
             if (sleep < _opts._resolvedMaxConnectRetryDuration) {
@@ -100,7 +111,7 @@ class Connection with ConnectionHandler {
             }
           }
           throw NoConnectionException(
-              "failed to connect to messaging server, $rc");
+              "failed to connect to messaging server, ${_describeReturnCode(rc)}");
         }
         break retry;
       } catch (e) {
@@ -155,12 +166,19 @@ class Connection with ConnectionHandler {
     return r;
   }
 
-  /// _attemptConnection tries each server in turn. It returns Accepted, or the
-  /// last return code a server sent, or ErrRefusedServerUnavailable if no
-  /// server answered.
-  Future<ConnectReturnCode> _attemptConnection({bool resume = false}) async {
+  /// _describeReturnCode names a return code of a CONNECT, for errors.
+  static String _describeReturnCode(int code) {
+    final rc = ConnectReturnCode.fromCode(code);
+    return rc == null ? 'return code $code' : 'return code $code (${rc.name})';
+  }
+
+  /// _attemptConnection tries each server in turn, with the client's current
+  /// client ID, which a renewal may have replaced. It returns Accepted's
+  /// code, or the last return code a server sent, or ErrServerUnavailable's
+  /// if no server answered.
+  Future<int> _attemptConnection({bool resume = false}) async {
     int? returnCode;
-    var result = ConnectReturnCode.ErrRefusedServerUnavailable;
+    var result = ConnectReturnCode.ErrServerUnavailable.index;
 
     for (var uri in _opts._resolvedServers) {
       returnCode = null;
@@ -195,13 +213,11 @@ class Connection with ConnectionHandler {
         print(error);
       });
       if (returnCode == ConnectReturnCode.Accepted.index) {
-        return ConnectReturnCode.Accepted;
+        return ConnectReturnCode.Accepted.index;
       }
       final code = returnCode;
-      if (code != null &&
-          code >= 0 &&
-          code < ConnectReturnCode.values.length) {
-        result = ConnectReturnCode.values[code];
+      if (code != null) {
+        result = code;
       }
       if (connectionHandler != null) {
         connectionHandler.close();
@@ -220,7 +236,7 @@ class Connection with ConnectionHandler {
       sleep = max;
     }
     while (!_isClosed()) {
-      ConnectReturnCode? rc;
+      int? rc;
       try {
         rc = await _attemptConnection(resume: true);
       } catch (e) {
@@ -231,7 +247,7 @@ class Connection with ConnectionHandler {
         connectionHandler?.close();
         return;
       }
-      if (rc == ConnectReturnCode.Accepted) {
+      if (rc == ConnectReturnCode.Accepted.index) {
         _reconnected();
         return;
       }
@@ -325,6 +341,23 @@ class Connection with ConnectionHandler {
     for (final m in _inflight.values.toList()) {
       _fail(m, err);
     }
+    _failApiRequests(err);
+  }
+
+  /// _failApiRequests fails the API requests the server has not answered.
+  /// With unanswered only, it fails those whose publish the server
+  /// acknowledged, whose answers a lost connection lost: a reconnect sends
+  /// the others again.
+  void _failApiRequests(String err, {bool unanswered = false}) {
+    for (final queue in _apiRequests.values) {
+      queue.removeWhere((a) {
+        if (unanswered && !a.p.completer.isCompleted) {
+          return false;
+        }
+        a.r.setError(err);
+        return true;
+      });
+    }
   }
 
   /// disconnect will disconnect the connection to the server
@@ -346,6 +379,7 @@ class Connection with ConnectionHandler {
       return;
     }
 
+    _failApiRequests('client disconnected');
     var p = Disconnect();
     var r = DisconnectResult();
     send.sink.add(MessageAndResult(p, r: r));
@@ -375,6 +409,7 @@ class Connection with ConnectionHandler {
     connectionHandler?.close();
     if (_opts._resolvedAutoReconnect) {
       _down = true;
+      _failApiRequests('connection lost before the answer', unanswered: true);
       _opts.connectionLostHandler?.call();
       reconnect();
       return;
@@ -527,6 +562,143 @@ class Connection with ConnectionHandler {
 
     return r;
   }
+
+  /// _onServerPublish handles what the server publishes to the client itself,
+  /// before the message is dispatched: a renewed client ID, and the answers
+  /// to API requests. The messages are dispatched, and acknowledged, as any
+  /// other.
+  void _onServerPublish(Publish p) {
+    for (final m in p.messages) {
+      if (m.topic == clientIdTopic) {
+        _adoptClientId(utf8.decode(m.payload, allowMalformed: true));
+        continue;
+      }
+      final queue = _apiRequests[m.topic];
+      if (queue == null || queue.isEmpty) {
+        continue;
+      }
+      // The server answers a connection's requests in order.
+      final a = queue.removeAt(0);
+      Object? answer;
+      try {
+        answer = jsonDecode(utf8.decode(m.payload));
+      } on FormatException catch (e) {
+        a.r.setError('unexpected answer on ${m.topic}: $e');
+        continue;
+      }
+      a.r._take(answer);
+    }
+  }
+
+  /// _adoptClientId takes a client ID the server renewed the client's with:
+  /// the client connects with it from now on, reconnects included, and the
+  /// client ID handler is told, to keep it.
+  void _adoptClientId(String id) {
+    if (id.isEmpty || id == _opts.clientID) {
+      return;
+    }
+    _opts.setClientID(id);
+    final handler = _opts.clientIdHandler;
+    if (handler == null) {
+      return;
+    }
+    try {
+      handler(id);
+    } catch (e, s) {
+      print('Connection::clientIdHandler - $e; $s');
+    }
+  }
+
+  /// _apiRequest publishes payload, as JSON, to the server's API topic
+  /// `unitdb/<name>`, and completes r with the server's answer. The request
+  /// is not kept in the local store: after a restart, nothing waits for its
+  /// answer.
+  T _apiRequest<T extends ApiResult>(String name, Object? payload, T r) {
+    if (_isClosed()) {
+      r.setError("error not connected");
+      return r;
+    }
+    final topic = 'unitdb/$name';
+    final p = PublishResult();
+    final pub = Publish(_messageIds._nextID(p), [
+      PublishMessage(
+          topic, Uint8List.fromList(utf8.encode(jsonEncode(payload))), '')
+    ]);
+    final a = _ApiRequest(r, p);
+    (_apiRequests[topic] ??= <_ApiRequest>[]).add(a);
+    p.completer.future.then((_) {
+      final err = p.error();
+      if (err != null && _apiRequests[topic]?.remove(a) == true) {
+        r.setError(err);
+      }
+    });
+    _submit(MessageAndResult(pub, r: p));
+    return r;
+  }
+
+  /// keygen asks the server for topic keys, one for each request: a
+  /// `unitdb/keygen` request, which only a primary client, or a connection
+  /// trusted as a service's, may make. The result completes with the keys,
+  /// each with the uuid to revoke it with (none for a v1 key), or with an
+  /// error, whose status is the server's: 400 for a ttl that is not a
+  /// duration, 403 for a client that may not, 503 for a ttl in a cluster
+  /// with nodes that don't read v2 keys yet.
+  ///
+  /// ```dart
+  /// final r = client.keygen([KeyRequest('teams.alpha...', type: 'rw', ttl: '24h')]);
+  /// await r.get(const Duration(seconds: 5));
+  /// final key = r.keys.single; // key.key, key.uuid
+  /// client.subscribe('${key.key}/teams.alpha...');
+  /// ```
+  KeyGenResult keygen(List<KeyRequest> requests) =>
+      _apiRequest('keygen', requests.map((k) => k.toJson()).toList(),
+          KeyGenResult());
+
+  /// requestClientId asks the server for a new secondary client ID of the
+  /// client's contract: a `unitdb/clientid` request, which only a primary
+  /// client may make (status 403 otherwise). The result has the ID, and its
+  /// uuid to revoke it with (none for a v1 ID).
+  ClientIdResult requestClientId() =>
+      _apiRequest('clientid', null, ClientIdResult());
+
+  /// revoke revokes the v2 client ID or topic key of the client's contract
+  /// with uuid, in decimal, as keygen and requestClientId give it: for ever,
+  /// or until [until]. A revoked client ID is refused at connect, with
+  /// ConnectReturnCode.ErrRefusedIDRejected; a revoked key with status 401.
+  /// What is open stays: connections and subscriptions, until the client
+  /// reconnects or subscribes again.
+  ///
+  /// Only a primary client may revoke (status 403 otherwise, a client a
+  /// service vouched for included). The server answers 400 to a uuid of 0
+  /// or not decimal, or an until gone by, and 404 if it is older than
+  /// revocations.
+  ApiResult revoke(String uuid, {DateTime? until}) =>
+      _apiRequest(
+          'revoke',
+          {
+            'uuid': uuid,
+            if (until != null) 'until': until.millisecondsSinceEpoch ~/ 1000,
+          },
+          ApiResult());
+
+  /// revokeAll revokes every client ID and topic key the client's contract
+  /// was issued before now, in whole seconds, and every v1 one: the
+  /// client's own ID included, so get the IDs and keys to keep using a
+  /// second later. Only a primary client may (status 403 otherwise); a
+  /// cluster with nodes that don't read v2 client IDs and keys yet refuses
+  /// it with status 503.
+  ApiResult revokeAll() => _apiRequest('revoke', {'all': true}, ApiResult());
+
+  /// vouch has a trusted service vouch for the connection, with the
+  /// service's client ID: a `unitdb/service` request. The connection then
+  /// publishes and subscribes on the contract's topics without topic keys,
+  /// and may generate them, until it closes. The server answers 403 to an ID
+  /// that is not a service's of the connection's contract, or that expired
+  /// or was revoked. Keep service IDs on servers, never on clients or
+  /// devices: a backend that opens connections for its users vouches for
+  /// them.
+  ApiResult vouch(String serviceClientId) =>
+      _apiRequest('service', {'client_id': serviceClientId}, ApiResult());
 
   /// Resume message Ids for publish message to ensure these are are not duplicated
   Future<void> _resumeMessageIds() async {

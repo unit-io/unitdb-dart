@@ -30,9 +30,9 @@ void main() {
     if (refuses) await server.stop();
   });
 
-  // Return code 0x04: the server's Unauthorized for a CONNECT (the client's
-  // ConnectReturnCode names it ErrRefusedServerUnavailable).
-  const unauthorized = 4;
+  // Return code 0x04: the server's Unauthorized for a CONNECT.
+  final unauthorized = ConnectReturnCode.ErrNotAuthorized.index;
+  assert(unauthorized == 4);
 
   test('a server without allow_insecure refuses a client with withInsecure', () async {
     final clientID = await newClientID(server.grpcPort);

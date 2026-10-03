@@ -1,5 +1,38 @@
 ## Unreleased
 
+### unitdb security stage 2
+
+- Client ID renewal: after a client connects, the server may send it its
+  client ID sealed again, on `unitdb/clientid/` (a v1 ID, one sealed with a
+  key being retired, or one past 80% of its lifetime). The client takes it,
+  and connects with it from then on, auto reconnect included;
+  `Connection.clientId` returns it. `Options.withClientIdHandler` tells the
+  application, to keep it: an expired ID is refused at connect. An
+  application without a handler works as before, with the renewed ID until
+  it restarts. The local store is kept by user name, and the session on the
+  server by the ID's identity, so both stay across a renewal. The message is
+  still delivered on `messageStream`, as before.
+- API requests, as results that complete with the server's answer, and fail
+  with its `status` when it refuses: `keygen` (with `KeyRequest`s, a ttl
+  included, and `TopicKey`s with their uuid), `requestClientId` (the ID and
+  its uuid), `revoke` by uuid, with an optional `until`, `revokeAll`, and
+  `vouch` with a service's client ID (`unitdb/service`). Answers are matched
+  to requests in the order they were sent.
+- v2 client IDs (94 characters) and topic keys (48, with `-` and `_`) are
+  taken as they are; tests cover topics keyed with them.
+- `ConnectReturnCode` follows the server's return codes, 0x00 to 0x09 as
+  unitdb's docs/utp.md lists them: 4 is `ErrNotAuthorized` (was
+  `ErrRefusedServerUnavailable`), 5 `ErrServerError` (was
+  `ErrNotAuthorised`), 6 `ErrBadToken` (was `ErrBadRequest`), and 7 to 9
+  are new: `ErrForbidden`, `ErrSessionInUse`, `ErrUnknownEpoch`. The old
+  names are deprecated aliases of the values with the same code. A connect
+  that no server answered reports the new `ErrServerUnavailable`, 10, the
+  client's own, instead of 4, which the server sends for not authorized.
+  `ConnectReturnCode.fromCode` maps a code to its value.
+- Go-server tests of renewal (a v1 ID, and one near its expiry), keygen
+  with a ttl, revocation by uuid and of everything, and vouching; the
+  harness takes config settings and builds the server's `cmd/mintid`.
+
 ### unitdb v0.6.0 (security stage 1)
 
 - Since unitdb v0.6.0, the server refuses a client that connects with

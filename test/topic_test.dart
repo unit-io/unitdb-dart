@@ -49,6 +49,45 @@ void main() {
     });
   });
 
+  group('v2 keys', () {
+    // A v2 topic key: 48 characters of base64url, '-' and '_' included, and
+    // never the '/' separator nor the '.' of topics.
+    final key = 'Zq-_3xK8vB2mN-p_Lw7RtY4uE9iO0aS1dF6gH5jC2kV8bX3n';
+    // A v1 signed key, of 26 characters, and an unsigned one, of 13.
+    const v1Key = 'AbCdEfGhIjKlMnOpQrStUvWxYz';
+    const unsigned = 'AbCdEfGhIjKlM';
+
+    test('have the length the server issues', () {
+      expect(key.length, 48);
+      expect(v1Key.length, 26);
+    });
+
+    test('are stripped from a publication topic', () {
+      for (final k in [key, v1Key, unsigned, '-_-_', '_', '-']) {
+        final t = PublicationTopic('$k/groups.private-room.my_topic');
+        expect(t.topic, 'groups.private-room.my_topic', reason: k);
+        expect(t.topicParts, ['groups', 'private-room', 'my_topic'], reason: k);
+        expect(t.hasWildcard, isFalse, reason: k);
+      }
+    });
+
+    test('are stripped from a filter, wildcards kept', () {
+      expect(filter('$key/groups.*.message').topicParts, ['groups', '*', 'message']);
+      expect(filter('$key/groups...').topicParts, ['groups', '...']);
+      expect(filter('$key/...').topicParts, ['...']);
+      expect(() => filter('$key/groups...private'), throwsException);
+    });
+
+    test('a keyed filter matches its topics, keyed or not', () {
+      expect(matches('$key/groups.*.message', 'groups.a-b.message'), isTrue);
+      expect(matches('$key/groups.*.message', '$key/groups.a_b.message'), isTrue);
+      expect(matches('$key/groups...', 'groups.x.y'), isTrue);
+      expect(matches('$key/...', 'any.topic'), isTrue);
+      expect(matches('$key/groups.a', 'groups.b'), isFalse);
+      expect(matches('$key/groups.a', 'groups.a'), isTrue);
+    });
+  });
+
   group('TopicFilter validation', () {
     test('accepts single and trailing multi-level wildcards', () {
       expect(() => filter('groups.*.message'), returnsNormally);
