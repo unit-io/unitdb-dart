@@ -46,14 +46,14 @@ class TopicKey {
 
   /// The key, opaque: publish and subscribe to `<key>/<topic>`. The server
   /// issues v2 keys, 48 characters of base64url (`A-Z`, `a-z`, `0-9`, `-`,
-  /// `_`); a cluster with nodes that don't read v2 keys yet issues v1 ones,
-  /// of 26 characters.
+  /// `_`); on unitdb v0.6.0, a cluster with nodes that don't read v2 keys
+  /// yet issues v1 ones, of 26 characters, which v0.7.0 refuses.
   final String key;
 
   final String topic;
 
   /// The key's uuid, in decimal, to revoke it with Connection.revoke; empty
-  /// for a v1 key, which has none.
+  /// for a v1 key (unitdb v0.6.0), which has none.
   final String uuid;
 }
 
@@ -120,12 +120,13 @@ class ClientIdResult extends ApiResult {
   String _uuid = '';
 
   /// The new client ID, opaque. The server issues v2 IDs, 94 characters of
-  /// base64url (`A-Z`, `a-z`, `0-9`, `-`, `_`), or v1 ones, of 52, in a
-  /// cluster with nodes that don't read v2 IDs yet.
+  /// base64url (`A-Z`, `a-z`, `0-9`, `-`, `_`); on unitdb v0.6.0, a cluster
+  /// with nodes that don't read v2 IDs yet issues v1 ones, of 52, which
+  /// v0.7.0 refuses.
   String get clientId => _clientId;
 
   /// The ID's uuid, in decimal, to revoke it with Connection.revoke; empty
-  /// for a v1 ID, which has none.
+  /// for a v1 ID (unitdb v0.6.0), which has none.
   String get uuid => _uuid;
 
   @override

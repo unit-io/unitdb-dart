@@ -16,9 +16,9 @@ Clients publish and subscribe with topic keys, which a primary client generates 
 Topics whose first part starts with `$` are reserved for the server, and a session belongs to the client ID that started it.
 
 ### Client IDs, topic keys and revocation
-Since unitdb's security stage 2, the server issues v2 client IDs, of 94 characters, and v2 topic keys, of 48, both base64url (`A-Z`, `a-z`, `0-9`, `-`, `_`). Treat them as opaque strings; the client takes them, and v1 ones, as they are.
+Since unitdb's security stage 2, the server issues v2 client IDs, of 94 characters, and v2 topic keys, of 48, both base64url (`A-Z`, `a-z`, `0-9`, `-`, `_`). Treat them as opaque strings; the client takes them as they are. Since unitdb v0.7.0, the server refuses v1 client IDs (52 characters), at connect with `ConnectReturnCode.ErrRefusedIDRejected` and without a new ID, and v1 topic keys (26 characters) and unsigned ones (13), with status 401. A v0.6.0 server still takes v1 IDs and keys (unsigned keys only when its config sets `accept_unsigned_keys`), and renews a v1 ID as v2 when its client connects; for an ID kept in a config, the server's `mintid -from <v1 id>` seals it again as v2, the same ID.
 
-A client ID may expire (the server's `client_id_ttl` and `primary_id_ttl`). When a client connects with a v1 ID, with one sealed with a key being retired, or with one past 80% of its lifetime, the server sends it the same ID sealed again, with a new expiry, on `unitdb/clientid/`. The client takes it, and connects with it from then on, reconnects included; `client.clientId` returns it. Keep it, to connect with it the next time the app starts: an expired ID is refused with `ConnectReturnCode.ErrRefusedIDRejected`.
+A client ID may expire (the server's `client_id_ttl` and `primary_id_ttl`). When a client connects with an ID sealed with a key being retired, or with one past 80% of its lifetime (or, on a v0.6.0 server, with a v1 ID), the server sends it the same ID sealed again, with a new expiry, on `unitdb/clientid/`. The client takes it, and connects with it from then on, reconnects included; `client.clientId` returns it. Keep it, to connect with it the next time the app starts: an expired ID is refused with `ConnectReturnCode.ErrRefusedIDRejected`.
 
 ```dart
 final client = Client('grpc://localhost:6080', storedClientId,

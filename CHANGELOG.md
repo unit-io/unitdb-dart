@@ -1,3 +1,19 @@
+## Unreleased
+
+### unitdb v0.7.0 (security stage 4)
+
+- unitdb v0.7.0 refuses v1 client IDs, at connect with
+  `ConnectReturnCode.ErrRefusedIDRejected`, without renewing them, and v1
+  and unsigned topic keys, with status 401; `mintid -v1` is gone. The README
+  and the documentation of `withClientIdHandler`, `TopicKey`,
+  `ClientIdResult`, `keygen`, `requestClientId` and `revokeAll` say so, and
+  keep what v0.6.0 does: it renews a v1 ID as v2, and a cluster with nodes
+  that don't read v2 yet issues v1 IDs and keys.
+- The Go-server test of renewal with a v1 ID now renews an ID near its
+  expiry, and checks the same: the renewed ID is adopted, the handler told,
+  the reconnect uses it without a second renewal, the server's session
+  resumes its reliable messages, and the local store and session stay.
+
 ## 0.3.0
 
 Works with unitdb v0.4.0 to v0.6.0. Null safe, and runs on Dart 3.

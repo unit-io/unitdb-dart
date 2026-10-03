@@ -2,8 +2,8 @@
 // v2 client IDs and topic keys, client ID renewal, keygen with a ttl,
 // revocation, and a service vouching for a connection. They run when
 // UNITDB_E2E_GO=1, as e2e_go_server_test.dart, against a server source that
-// has them (skipped otherwise). They build the server's cmd/mintid for v1
-// IDs, IDs of a given contract or lifetime, and service IDs.
+// has them (skipped otherwise). They build the server's cmd/mintid for IDs
+// of a given contract or lifetime, and service IDs.
 @Tags(['go-server'])
 import 'dart:async';
 import 'dart:convert';
@@ -114,9 +114,11 @@ void main() {
     return r.status;
   }
 
-  test('renews a v1 client ID: adopted, told, used to reconnect, sessions kept', () async {
-    final v1 = (await mintid(server, ['-v1'])).clientID;
-    expect(v1.length, 52);
+  test('renews an ID near its expiry: adopted, told, used to reconnect, sessions kept', () async {
+    // Renewed past 80% of its 10 s: from 8 s on.
+    final old = (await mintid(server, ['-ttl', '10s'])).clientID;
+    final minted = DateTime.now();
+    expect(old.length, 94);
     final proxy = Proxy(server.grpcPort);
     await proxy.start();
     addTearDown(proxy.stop);
@@ -127,10 +129,12 @@ void main() {
       final f = File('db_$user.sqlite');
       if (f.existsSync()) f.deleteSync();
     });
+    await Future<void>.delayed(
+        minted.add(const Duration(milliseconds: 8500)).difference(DateTime.now()));
     final renewed = <String>[];
     var connected = 0, lost = 0;
     final client = await connect(
-        v1,
+        old,
         Options()
             .withInsecure()
             .withUserNamePassword(user, Uint8List(0))
@@ -147,10 +151,11 @@ void main() {
     expect(store, isNotNull);
 
     await eventually('the renewed client ID', () => renewed.isNotEmpty);
-    final v2 = renewed.single;
-    expect(v2.length, 94, reason: 'a v2 client ID');
-    expect(v2, matches(base64url));
-    expect(client.clientId, v2);
+    final renewedID = renewed.single;
+    expect(renewedID, isNot(old));
+    expect(renewedID.length, 94, reason: 'a v2 client ID');
+    expect(renewedID, matches(base64url));
+    expect(client.clientId, renewedID);
 
     final got = <String>[];
     client.messageStream.listen((ms) => got.addAll(
@@ -161,7 +166,8 @@ void main() {
     // Reliable messages the client does not get before its connection
     // drops: only its resumed session on the server has them.
     proxy.hold = true;
-    final pub = await connect(v1, options().withInsecure());
+    // The publisher shares the renewed ID, with a session of its own.
+    final pub = await connect(renewedID, options().withInsecure());
     for (final m in ['r0', 'r1', 'r2']) {
       final p = pub.publish('dart.renew.reliable', bytes(m), deliveryMode: DeliveryMode.reliable);
       expect(await p.get(const Duration(seconds: 5)), isTrue);
@@ -176,10 +182,11 @@ void main() {
         () => ['r0', 'r1', 'r2'].every(got.contains),
         timeout: const Duration(seconds: 20));
 
-    // It reconnected with the renewed ID: the v1 one would be renewed again.
+    // It reconnected with the renewed ID: the old one, still past 80% of
+    // its lifetime, would be renewed again, or refused once it expired.
     await Future<void>.delayed(const Duration(seconds: 1));
-    expect(renewed, [v2], reason: 'the reconnect was renewed again');
-    expect(client.clientId, v2);
+    expect(renewed, [renewedID], reason: 'the reconnect was renewed again');
+    expect(client.clientId, renewedID);
     // The local store and session stay.
     expect(client.localStore, same(store));
     expect(client.sessionId, sessionId);
