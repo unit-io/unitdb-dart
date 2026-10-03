@@ -1,4 +1,6 @@
-## Unreleased
+## 0.3.0
+
+Works with unitdb v0.4.0 to v0.6.0. Null safe, and runs on Dart 3.
 
 ### unitdb security stage 2
 
@@ -61,9 +63,6 @@
 - `disconnect` sends its DISCONNECT before closing the stream. It cancelled
   the stream at once, which with newer grpc dropped the DISCONNECT, so the
   server only saw the connection go away.
-
-Works with unitdb v0.4.0 and v0.5.0, which require the server to have an
-encryption key of its own.
 
 ### Fixes
 
