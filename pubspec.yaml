@@ -1,6 +1,6 @@
 name: unitdb_client
 description: Lightweight and high performance publish-subscribe messaging system - dart client library.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/unit-io/unitdb-dart
 
 environment:
