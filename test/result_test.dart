@@ -58,10 +58,48 @@ void main() {
     });
   });
 
+  group('ConnectReturnCode', () {
+    test('indexes are the codes the server sends (docs/utp.md)', () {
+      expect(ConnectReturnCode.values.map((c) => c.index), List.generate(11, (i) => i));
+      expect(ConnectReturnCode.Accepted.index, 0x00);
+      expect(ConnectReturnCode.ErrRefusedBadProtocolVersion.index, 0x01);
+      expect(ConnectReturnCode.ErrRefusedIDRejected.index, 0x02);
+      expect(ConnectReturnCode.ErrRefusedBadID.index, 0x03);
+      expect(ConnectReturnCode.ErrNotAuthorized.index, 0x04);
+      expect(ConnectReturnCode.ErrServerError.index, 0x05);
+      expect(ConnectReturnCode.ErrBadToken.index, 0x06);
+      expect(ConnectReturnCode.ErrForbidden.index, 0x07);
+      expect(ConnectReturnCode.ErrSessionInUse.index, 0x08);
+      expect(ConnectReturnCode.ErrUnknownEpoch.index, 0x09);
+    });
+
+    test("the client's no-answer code is past the server's", () {
+      expect(ConnectReturnCode.ErrServerUnavailable.index, 10);
+      expect(ConnectReturnCode.ErrServerUnavailable,
+          isNot(ConnectReturnCode.ErrNotAuthorized));
+    });
+
+    test('the renamed names are kept as deprecated aliases, by code', () {
+      // ignore: deprecated_member_use_from_same_package
+      expect(ConnectReturnCode.ErrRefusedServerUnavailable, ConnectReturnCode.ErrNotAuthorized);
+      // ignore: deprecated_member_use_from_same_package
+      expect(ConnectReturnCode.ErrNotAuthorised, ConnectReturnCode.ErrServerError);
+      // ignore: deprecated_member_use_from_same_package
+      expect(ConnectReturnCode.ErrBadRequest, ConnectReturnCode.ErrBadToken);
+    });
+
+    test('fromCode', () {
+      expect(ConnectReturnCode.fromCode(4), ConnectReturnCode.ErrNotAuthorized);
+      expect(ConnectReturnCode.fromCode(null), isNull);
+      expect(ConnectReturnCode.fromCode(-1), isNull);
+      expect(ConnectReturnCode.fromCode(0x17), isNull);
+    });
+  });
+
   group('ConnectResult', () {
     test('carries the return code', () {
-      final r = ConnectResult()..returnCode = ConnectReturnCode.ErrNotAuthorised.index;
-      expect(r.returnCode, ConnectReturnCode.ErrNotAuthorised.index);
+      final r = ConnectResult()..returnCode = ConnectReturnCode.ErrNotAuthorized.index;
+      expect(r.returnCode, ConnectReturnCode.ErrNotAuthorized.index);
     });
   });
 }

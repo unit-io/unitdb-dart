@@ -80,7 +80,7 @@ void main() {
     });
 
     test('reports a refusal and its return code', () async {
-      server.connectReturnCode = ConnectReturnCode.ErrNotAuthorised.index;
+      server.connectReturnCode = ConnectReturnCode.ErrNotAuthorized.index;
       final c = newClient();
       late ConnectResult r;
       Object? thrown;
@@ -91,7 +91,7 @@ void main() {
       }
       expect(thrown, isNull, reason: 'connect threw instead of returning a result: $thrown');
       expect(r.error(), isNotNull);
-      expect(r.returnCode, ConnectReturnCode.ErrNotAuthorised.index);
+      expect(r.returnCode, ConnectReturnCode.ErrNotAuthorized.index);
     });
 
     test('reports an error when no server is listening', () async {
@@ -109,6 +109,8 @@ void main() {
       }
       expect(thrown, isNull, reason: 'connect threw instead of returning a result: $thrown');
       expect(r.error(), isNotNull);
+      // The client's own code, not one a server sends.
+      expect((r as ConnectResult).returnCode, ConnectReturnCode.ErrServerUnavailable.index);
       server = MockServer();
       await server.start(); // for tearDown
     });

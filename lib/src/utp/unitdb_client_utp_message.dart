@@ -13,15 +13,73 @@ enum MessageType {
   FLOWCONTROL
 }
 
-/// Enumeration of error codes returned by Connect().
+/// The return codes of a CONNECT, as ConnectResult.returnCode reports them:
+/// a value's index is the code. Indexes 0 to 9 are the codes the server
+/// sends in its CONNACK (unitdb's docs/utp.md, Connect Return Code);
+/// [ErrServerUnavailable] is the client's own, for a connect that no server
+/// answered.
 enum ConnectReturnCode {
+  /// 0x00: the connection is accepted.
   Accepted,
+
+  /// 0x01: unacceptable protocol version.
   ErrRefusedBadProtocolVersion,
+
+  /// 0x02: the client ID is refused: missing, invalid, expired or revoked.
+  /// A client that sent none, or one the server cannot open, is sent a new
+  /// primary client ID on `unitdb/clientid/`; an expired or revoked one gets
+  /// none, and needs a new ID from its primary client.
   ErrRefusedIDRejected,
+
+  /// 0x03: unacceptable client ID, access not allowed.
   ErrRefusedBadID,
-  ErrRefusedServerUnavailable,
-  ErrNotAuthorised,
-  ErrBadRequest
+
+  /// 0x04: not authorized: a refused security key, or the insecure flag
+  /// (Options.withInsecure) to a server without `allow_insecure`.
+  ErrNotAuthorized,
+
+  /// 0x05: the server failed.
+  ErrServerError,
+
+  /// 0x06: authentication failed.
+  ErrBadToken,
+
+  /// 0x07: forbidden.
+  ErrForbidden,
+
+  /// 0x08: the session is in use by another connection.
+  ErrSessionInUse,
+
+  /// 0x09: unknown epoch.
+  ErrUnknownEpoch,
+
+  /// No server answered the CONNECT: none could be reached, or the
+  /// connection closed before a CONNACK. The client reports it; the server
+  /// never sends it, and its index, 10, is past the server's codes.
+  ErrServerUnavailable;
+
+  /// The name return code 4 had: the server sends 4 for not authorized, as
+  /// [ErrNotAuthorized], and the client reports a connect that no server
+  /// answered as [ErrServerUnavailable].
+  @Deprecated('the server sends 4 for not authorized: use ErrNotAuthorized, '
+      'or ErrServerUnavailable for a connect that no server answered')
+  static const ErrRefusedServerUnavailable = ErrNotAuthorized;
+
+  /// The name return code 5 had: the server sends 5 for a server error, as
+  /// [ErrServerError], and 4 for not authorized, as [ErrNotAuthorized].
+  @Deprecated('the server sends 5 for a server error: use ErrServerError, '
+      'or ErrNotAuthorized for not authorized (4)')
+  static const ErrNotAuthorised = ErrServerError;
+
+  /// The name return code 6 had: the server sends 6 for a failed
+  /// authentication, as [ErrBadToken].
+  @Deprecated('the server sends 6 for a failed authentication: use ErrBadToken')
+  static const ErrBadRequest = ErrBadToken;
+
+  /// fromCode returns the value of return code [code], or null for a code
+  /// this client does not know.
+  static ConnectReturnCode? fromCode(int? code) =>
+      code != null && code >= 0 && code < values.length ? values[code] : null;
 }
 
 /// Message is the interface all our Messages in the line protocol will be implementing

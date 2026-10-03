@@ -100,9 +100,13 @@ class GoServer {
   /// allowInsecure sets the server's allow_insecure, so that it accepts
   /// clients that connect with the insecure flag (withInsecure), as the
   /// tests' clients do. Without it, unitdb v0.6.0 and later refuse them.
-  GoServer({this.allowInsecure = true});
+  GoServer({this.allowInsecure = true, this.config = const {}});
 
   final bool allowInsecure;
+
+  /// config holds settings added to the server's config, such as
+  /// `client_id_ttl`.
+  final Map<String, Object?> config;
   Process? process;
   // grpcPort, tcpPort and dir are set with bin, by the first start.
   late int grpcPort;
@@ -139,6 +143,7 @@ class GoServer {
             'unitdb': {'database': 'unitdb', 'mem_size': 500000000}
           }
         },
+        ...config,
       }));
     }
     final process = this.process =
@@ -176,3 +181,53 @@ class GoServer {
   }
 }
 
+
+/// MintedID is a client ID minted by the server's cmd/mintid.
+class MintedID {
+  MintedID(this.clientID, this.contract, this.uuid);
+  final String clientID;
+  final int contract;
+
+  /// The ID's uuid, in decimal; "0" for a v1 ID.
+  final String uuid;
+}
+
+String? _mintidBin;
+
+/// mintid runs the server's cmd/mintid, built once, with args and the
+/// server's config, for its key, and returns the client ID it minted. The
+/// server must have started, which writes its config.
+Future<MintedID> mintid(GoServer server, List<String> args) async {
+  var bin = _mintidBin;
+  if (bin == null) {
+    final dir = await Directory.systemTemp.createTemp('unitdb-dart-mintid');
+    bin = '${dir.path}/mintid';
+    final build = await Process.run('go', ['build', '-o', bin, './cmd/mintid'],
+        workingDirectory: serverDir());
+    if (build.exitCode != 0) {
+      throw StateError('go build ./cmd/mintid failed in ${serverDir()}:\n${build.stderr}');
+    }
+    _mintidBin = bin;
+  }
+  final run = await Process.run(bin, ['-config', '${server.dir.path}/e2e.conf', ...args]);
+  if (run.exitCode != 0) {
+    throw StateError('mintid $args: ${run.stderr}');
+  }
+  final fields = <String, String>{};
+  for (final line in LineSplitter.split(run.stdout as String)) {
+    final i = line.indexOf(':');
+    if (i > 0) fields[line.substring(0, i).trim()] = line.substring(i + 1).trim();
+  }
+  final id = fields['client id'];
+  if (id == null) {
+    throw StateError('mintid printed no client id:\n${run.stdout}');
+  }
+  return MintedID(id, int.parse(fields['contract'] ?? '0'), fields['uuid'] ?? '0');
+}
+
+/// serverHasSecurityStage2 tells whether the server source issues v2 client
+/// IDs and keys, renews client IDs and takes unitdb/revoke and
+/// unitdb/service requests, as unitdb's security stage 2 does.
+bool serverHasSecurityStage2() =>
+    File('${serverDir()}/internal/revocation.go').existsSync() &&
+    File('${serverDir()}/cmd/mintid/main.go').existsSync();

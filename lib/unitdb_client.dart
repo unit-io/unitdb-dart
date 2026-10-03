@@ -51,6 +51,8 @@ part 'src/unitdb_client_options.dart';
 
 part 'src/unitdb_client_result_notifier.dart';
 
+part 'src/unitdb_client_api.dart';
+
 part 'src/unitdb_client.dart';
 
 part 'src/unitdb_client_topic_filter.dart';

@@ -11,9 +11,46 @@ To build [unitdb](https://github.com/unit-io/unitdb) from source code use go get
 
 The server needs an encryption key of its own: set `encryption_config`'s `key` in unitdb.conf, or the `UNITDB_ENCRYPTION_KEY` environment variable, to 32 random characters, for example the output of `openssl rand -base64 24`. Client IDs are signed with it, so clients need IDs issued by that server.
 
-Clients publish and subscribe with topic keys, which a primary client generates with a `unitdb/keygen` request. Since unitdb v0.6.0 the server refuses a client that connects with `withInsecure()` (Connect Return Code 4), unless its unitdb.conf sets `"allow_insecure": true`, which is for development only and which a cluster node refuses to start with. A trusted backend needs no topic keys either: give it a service client ID, which the server's `mintid` command issues (`go run ./server/cmd/mintid -config server/unitdb.conf -contract <contract> -service`). Keep service IDs on servers, never on clients or devices.
+Clients publish and subscribe with topic keys, which a primary client generates with a `unitdb/keygen` request. Since unitdb v0.6.0 the server refuses a client that connects with `withInsecure()` (Connect Return Code 4, `ConnectReturnCode.ErrNotAuthorized`), unless its unitdb.conf sets `"allow_insecure": true`, which is for development only and which a cluster node refuses to start with. A trusted backend needs no topic keys either: give it a service client ID, which the server's `mintid` command issues (`go run ./server/cmd/mintid -config server/unitdb.conf -contract <contract> -service`). Keep service IDs on servers, never on clients or devices.
 
 Topics whose first part starts with `$` are reserved for the server, and a session belongs to the client ID that started it.
+
+### Client IDs, topic keys and revocation
+Since unitdb's security stage 2, the server issues v2 client IDs, of 94 characters, and v2 topic keys, of 48, both base64url (`A-Z`, `a-z`, `0-9`, `-`, `_`). Treat them as opaque strings; the client takes them, and v1 ones, as they are.
+
+A client ID may expire (the server's `client_id_ttl` and `primary_id_ttl`). When a client connects with a v1 ID, with one sealed with a key being retired, or with one past 80% of its lifetime, the server sends it the same ID sealed again, with a new expiry, on `unitdb/clientid/`. The client takes it, and connects with it from then on, reconnects included; `client.clientId` returns it. Keep it, to connect with it the next time the app starts: an expired ID is refused with `ConnectReturnCode.ErrRefusedIDRejected`.
+
+```dart
+final client = Client('grpc://localhost:6080', storedClientId,
+    Options()..withClientIdHandler((id) => saveClientId(id)));
+```
+
+The client's local store (`PersistenceStore.Localdb`) is kept by user name, and its session on the server by the ID's contract and identity, so both stay across a renewal.
+
+A primary client manages its contract's IDs and keys with the server's API requests. Each returns a result that completes with the server's answer, and fails with its `status` (as HTTP's) when the server refuses it:
+
+```dart
+// Topic keys, with an optional ttl (a Go duration); each has a uuid.
+final keys = client.keygen([KeyRequest('teams.alpha...', type: 'rw', ttl: '24h')]);
+await keys.get(const Duration(seconds: 5));
+client.subscribe('${keys.keys.single.key}/teams.alpha...');
+
+// A secondary client ID, and its uuid.
+final id = client.requestClientId();
+await id.get(const Duration(seconds: 5)); // id.clientId, id.uuid
+
+// Revoke an ID or a key by its uuid, for ever or until a time; or
+// everything the contract was issued before now, the caller's ID included.
+await client.revoke(keys.keys.single.uuid).get(const Duration(seconds: 5));
+await client.revoke(id.uuid, until: DateTime.now().add(const Duration(days: 1)))
+    .get(const Duration(seconds: 5));
+await client.revokeAll().get(const Duration(seconds: 5));
+```
+
+A backend that opens a connection for a user can have its service ID vouch for it, so that it publishes and subscribes without topic keys: `client.vouch(serviceClientId)`. Keep service IDs on servers.
+
+### Connect return codes
+`ConnectResult.returnCode` is the code of the server's CONNACK, an index of `ConnectReturnCode`, as unitdb's docs/utp.md lists them: 0 `Accepted`, 1 `ErrRefusedBadProtocolVersion`, 2 `ErrRefusedIDRejected` (a missing, invalid, expired or revoked client ID), 3 `ErrRefusedBadID`, 4 `ErrNotAuthorized` (a refused key, or `withInsecure()` without `allow_insecure`), 5 `ErrServerError`, 6 `ErrBadToken`, 7 `ErrForbidden`, 8 `ErrSessionInUse`, 9 `ErrUnknownEpoch`. A connect that no server answered reports `ErrServerUnavailable`, 10, the client's own.
 
 ### Usage
 Make use of the client by importing the packet to your Flutter or Dart project. For example,
