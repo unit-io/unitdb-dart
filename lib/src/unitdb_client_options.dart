@@ -336,9 +336,10 @@ class Options {
   ///
   /// After a client connects, the server (unitdb v0.6.0 and later) may send
   /// it its client ID sealed again, on `unitdb/clientid/`: when it connected
-  /// with a v1 ID, with a v2 one sealed with a key being retired, or with
-  /// one past 80% of its lifetime (the server's `client_id_ttl` or
-  /// `primary_id_ttl`). It is the same ID: the same contract, permissions
+  /// with a v2 ID sealed with a key being retired, or with one past 80% of
+  /// its lifetime (the server's `client_id_ttl` or `primary_id_ttl`), or,
+  /// on v0.6.0, with a v1 ID (v0.7.0 refuses v1 IDs, without renewing
+  /// them). It is the same ID: the same contract, permissions
   /// and sessions, with a new expiry. The client takes it whether or not a
   /// handler is set: it connects with it from then on, reconnects included,
   /// and Connection.clientId returns it. Its local store, kept by user name,

@@ -639,10 +639,11 @@ class Connection with ConnectionHandler {
   /// keygen asks the server for topic keys, one for each request: a
   /// `unitdb/keygen` request, which only a primary client, or a connection
   /// trusted as a service's, may make. The result completes with the keys,
-  /// each with the uuid to revoke it with (none for a v1 key), or with an
-  /// error, whose status is the server's: 400 for a ttl that is not a
-  /// duration, 403 for a client that may not, 503 for a ttl in a cluster
-  /// with nodes that don't read v2 keys yet.
+  /// each with the uuid to revoke it with (none for a v1 key, which only
+  /// unitdb v0.6.0 issues), or with an error, whose status is the server's:
+  /// 400 for a ttl that is not a duration, 403 for a client that may not,
+  /// 503 for a ttl in a v0.6.0 cluster with nodes that don't read v2 keys
+  /// yet.
   ///
   /// ```dart
   /// final r = client.keygen([KeyRequest('teams.alpha...', type: 'rw', ttl: '24h')]);
@@ -657,7 +658,8 @@ class Connection with ConnectionHandler {
   /// requestClientId asks the server for a new secondary client ID of the
   /// client's contract: a `unitdb/clientid` request, which only a primary
   /// client may make (status 403 otherwise). The result has the ID, and its
-  /// uuid to revoke it with (none for a v1 ID).
+  /// uuid to revoke it with (none for a v1 ID, which only unitdb v0.6.0
+  /// issues).
   ClientIdResult requestClientId() =>
       _apiRequest('clientid', null, ClientIdResult());
 
@@ -682,9 +684,9 @@ class Connection with ConnectionHandler {
           ApiResult());
 
   /// revokeAll revokes every client ID and topic key the client's contract
-  /// was issued before now, in whole seconds, and every v1 one: the
-  /// client's own ID included, so get the IDs and keys to keep using a
-  /// second later. Only a primary client may (status 403 otherwise); a
+  /// was issued before now, in whole seconds, IDs sealed again from v1 ones
+  /// included (and, on unitdb v0.6.0, every v1 ID and key): the client's own
+  /// ID included, so get the IDs and keys to keep using a second later. Only a primary client may (status 403 otherwise); a
   /// cluster with nodes that don't read v2 client IDs and keys yet refuses
   /// it with status 503.
   ApiResult revokeAll() => _apiRequest('revoke', {'all': true}, ApiResult());

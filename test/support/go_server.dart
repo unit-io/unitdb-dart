@@ -188,7 +188,7 @@ class MintedID {
   final String clientID;
   final int contract;
 
-  /// The ID's uuid, in decimal; "0" for a v1 ID.
+  /// The ID's uuid, in decimal; "0" if mintid printed none.
   final String uuid;
 }
 
